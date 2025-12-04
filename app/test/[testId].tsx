@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Linking,
   Alert,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,15 +18,23 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import { useStudent } from '@/src/contexts/StudentContext';
 import { getStudentEndpoints } from '@/src/config/api';
 
+interface OptionWithImage {
+  text: string;
+  imageUrl?: string;
+}
+
 interface Answer {
   questionNumber: number;
   questionText: string;
+  questionImageUrl?: string;
   questionType: 'mcq' | 'essay';
   points: number;
   selectedOption?: number;
   correctOption?: number;
-  options?: string[];
+  options?: OptionWithImage[];
   isCorrect?: boolean;
+  explanation?: string;
+  explanationImageUrl?: string;
   textAnswer?: string;
   pdfFiles?: Array<{ fileName: string; fileUrl: string }>;
   earnedPoints: number;
@@ -327,7 +336,8 @@ export default function TestDetailScreen() {
 
             {/* Questions Review */}
             <Text style={styles.sectionTitle}>Questions Review</Text>
-            {submission.answers?.map((answer, index) => (
+            {submission.answers && submission.answers.length > 0 ? (
+              submission.answers.map((answer, index) => (
               <TouchableOpacity
                 key={index}
                 style={styles.questionCard}
@@ -336,11 +346,11 @@ export default function TestDetailScreen() {
               >
                 <View style={styles.questionHeader}>
                   <View style={styles.questionNumber}>
-                    <Text style={styles.questionNumberText}>Q{answer.questionNumber}</Text>
+                    <Text style={styles.questionNumberText}>Q{answer.questionNumber || index + 1}</Text>
                   </View>
                   <View style={styles.questionInfo}>
                     <Text style={styles.questionType}>
-                      {answer.questionType.toUpperCase()}
+                      {(answer.questionType || 'MCQ').toUpperCase()}
                     </Text>
                     <View style={[
                       styles.questionResult,
@@ -358,7 +368,7 @@ export default function TestDetailScreen() {
                             : '#6366F1'
                         }
                       ]}>
-                        {answer.earnedPoints}/{answer.points} pts
+                        {answer.earnedPoints || 0}/{answer.points || 0} pts
                       </Text>
                     </View>
                   </View>
@@ -371,9 +381,20 @@ export default function TestDetailScreen() {
 
                 {expandedQuestions.has(index) && (
                   <View style={styles.questionDetails}>
-                    <Text style={styles.questionText}>{answer.questionText}</Text>
+                    <Text style={styles.questionText}>{answer.questionText || 'Question text not available'}</Text>
                     
-                    {answer.questionType === 'mcq' && answer.options && (
+                    {/* Question Image */}
+                    {answer.questionImageUrl && (
+                      <View style={styles.questionImageContainer}>
+                        <Image 
+                          source={{ uri: answer.questionImageUrl }} 
+                          style={styles.questionImage}
+                          resizeMode="contain"
+                        />
+                      </View>
+                    )}
+                    
+                    {answer.questionType === 'mcq' && answer.options && answer.options.length > 0 && (
                       <View style={styles.optionsContainer}>
                         {answer.options.map((option, optIndex) => (
                           <View 
@@ -396,7 +417,19 @@ export default function TestDetailScreen() {
                                 {String.fromCharCode(65 + optIndex)}
                               </Text>
                             </View>
-                            <Text style={styles.optionText}>{option}</Text>
+                            <View style={styles.optionContent}>
+                              <Text style={styles.optionText}>
+                                {typeof option === 'string' ? option : option.text}
+                              </Text>
+                              {/* Option Image */}
+                              {typeof option === 'object' && option.imageUrl && (
+                                <Image 
+                                  source={{ uri: option.imageUrl }} 
+                                  style={styles.optionImage}
+                                  resizeMode="contain"
+                                />
+                              )}
+                            </View>
                             {answer.correctOption === optIndex && (
                               <Ionicons name="checkmark-circle" size={18} color="#10B981" />
                             )}
@@ -405,6 +438,24 @@ export default function TestDetailScreen() {
                             )}
                           </View>
                         ))}
+                      </View>
+                    )}
+                    
+                    {/* Explanation for MCQ (shown after answering) */}
+                    {answer.questionType === 'mcq' && answer.explanation && (
+                      <View style={styles.explanationBox}>
+                        <View style={styles.explanationHeader}>
+                          <Ionicons name="bulb-outline" size={16} color="#059669" />
+                          <Text style={styles.explanationTitle}>Explanation</Text>
+                        </View>
+                        <Text style={styles.explanationText}>{answer.explanation}</Text>
+                        {answer.explanationImageUrl && (
+                          <Image 
+                            source={{ uri: answer.explanationImageUrl }} 
+                            style={styles.explanationImage}
+                            resizeMode="contain"
+                          />
+                        )}
                       </View>
                     )}
 
@@ -420,9 +471,10 @@ export default function TestDetailScreen() {
                         )}
                         {answer.pdfFiles && answer.pdfFiles.length > 0 && (
                           <View style={styles.attachments}>
-                            <Text style={styles.attachmentLabel}>
-                              <Ionicons name="attach" size={14} color="#6B7280" /> Submitted Files:
-                            </Text>
+                            <View style={styles.attachmentLabelRow}>
+                              <Ionicons name="attach" size={14} color="#6B7280" />
+                              <Text style={styles.attachmentLabel}>Submitted Files:</Text>
+                            </View>
                             {answer.pdfFiles.map((file, fileIndex) => (
                               <TouchableOpacity 
                                 key={fileIndex} 
@@ -456,7 +508,12 @@ export default function TestDetailScreen() {
                   </View>
                 )}
               </TouchableOpacity>
-            ))}
+              ))
+            ) : (
+              <View style={styles.noAnswersCard}>
+                <Text style={styles.noAnswersText}>No question details available</Text>
+              </View>
+            )}
           </>
         ) : (
           <View style={styles.noSubmissionCard}>
@@ -787,10 +844,59 @@ const styles = StyleSheet.create({
   whiteBulletText: {
     color: '#FFFFFF',
   },
-  optionText: {
+  optionContent: {
     flex: 1,
+  },
+  optionText: {
     fontSize: 14,
     color: '#1F2937',
+  },
+  optionImage: {
+    width: '100%',
+    height: 120,
+    marginTop: 8,
+    borderRadius: 6,
+    backgroundColor: '#F3F4F6',
+  },
+  questionImageContainer: {
+    marginVertical: 12,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#F3F4F6',
+  },
+  questionImage: {
+    width: '100%',
+    height: 200,
+  },
+  explanationBox: {
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: '#ECFDF5',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  explanationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  explanationTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#059669',
+  },
+  explanationText: {
+    fontSize: 13,
+    color: '#065F46',
+    lineHeight: 18,
+  },
+  explanationImage: {
+    width: '100%',
+    height: 150,
+    marginTop: 8,
+    borderRadius: 6,
   },
   essayAnswer: {
     marginTop: 8,
@@ -821,11 +927,16 @@ const styles = StyleSheet.create({
   attachments: {
     marginTop: 12,
   },
+  attachmentLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 8,
+  },
   attachmentLabel: {
     fontSize: 12,
     fontWeight: '600',
     color: '#6B7280',
-    marginBottom: 8,
   },
   downloadButton: {
     flexDirection: 'row',
@@ -895,5 +1006,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
     marginTop: 4,
+  },
+  noAnswersCard: {
+    backgroundColor: '#FEF3C7',
+    borderRadius: 8,
+    padding: 16,
+    alignItems: 'center',
+  },
+  noAnswersText: {
+    fontSize: 14,
+    color: '#92400E',
   },
 });
