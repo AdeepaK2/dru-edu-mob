@@ -15,8 +15,7 @@ import {
 import { Link, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-
-const API_URL = 'http://localhost:3001/api/v1';
+import { AUTH_ENDPOINTS } from '../../src/config/api';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -32,7 +31,7 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/auth/login`, {
+      const response = await fetch(AUTH_ENDPOINTS.login, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),

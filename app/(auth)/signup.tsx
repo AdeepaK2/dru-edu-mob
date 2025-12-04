@@ -15,8 +15,7 @@ import {
 import { Link, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-
-const API_URL = 'http://localhost:3001/api/v1';
+import { AUTH_ENDPOINTS } from '../../src/config/api';
 
 export default function SignupScreen() {
   const [step, setStep] = useState(1);
@@ -37,7 +36,7 @@ export default function SignupScreen() {
 
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/auth/verify-email`, {
+      const response = await fetch(AUTH_ENDPOINTS.verifyEmail, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
@@ -79,7 +78,7 @@ export default function SignupScreen() {
 
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/auth/signup`, {
+      const response = await fetch(AUTH_ENDPOINTS.signup, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, name, phone }),
