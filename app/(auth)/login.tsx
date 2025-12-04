@@ -51,8 +51,11 @@ export default function LoginScreen() {
           linkedStudents: data.data.parent.linkedStudents || [],
         };
         
+        // Use idToken for API calls (not customToken)
+        const token = data.data.idToken || data.data.customToken;
+        
         // Save to auth context (this will also check subscription)
-        await login(data.data.customToken, userData);
+        await login(token, userData);
         
         // Navigate to dashboard
         router.replace('/(tabs)');
