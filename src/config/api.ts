@@ -14,6 +14,14 @@ export const API_CONFIG = {
       verifyOtp: '/auth/verify-otp',
       resendOtp: '/auth/resend-otp',
       logout: '/auth/logout',
+      profile: '/auth/profile',
+    },
+    subscription: {
+      status: '/subscription/status',
+      pricing: '/subscription/pricing',
+      subscribe: '/subscription/subscribe',
+      devSubscribe: '/subscription/dev-subscribe',
+      cancel: '/subscription/cancel',
     },
     parent: {
       profile: '/parent/profile',
@@ -35,6 +43,16 @@ export const AUTH_ENDPOINTS = {
   verifyOtp: getApiUrl(API_CONFIG.endpoints.auth.verifyOtp),
   resendOtp: getApiUrl(API_CONFIG.endpoints.auth.resendOtp),
   logout: getApiUrl(API_CONFIG.endpoints.auth.logout),
+  profile: getApiUrl(API_CONFIG.endpoints.auth.profile),
+};
+
+// Subscription endpoints
+export const SUBSCRIPTION_ENDPOINTS = {
+  status: getApiUrl(API_CONFIG.endpoints.subscription.status),
+  pricing: getApiUrl(API_CONFIG.endpoints.subscription.pricing),
+  subscribe: getApiUrl(API_CONFIG.endpoints.subscription.subscribe),
+  devSubscribe: getApiUrl(API_CONFIG.endpoints.subscription.devSubscribe),
+  cancel: getApiUrl(API_CONFIG.endpoints.subscription.cancel),
 };
 
 // Parent endpoints

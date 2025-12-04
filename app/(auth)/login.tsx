@@ -16,12 +16,14 @@ import { Link, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { AUTH_ENDPOINTS } from '../../src/config/api';
+import { useAuth } from '../../src/contexts/AuthContext';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const { login } = useAuth();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -40,7 +42,19 @@ export default function LoginScreen() {
       const data = await response.json();
 
       if (data.success) {
-        Alert.alert('Success', 'Login successful!');
+        // Extract user data and token
+        const userData = {
+          uid: data.data.parent.uid,
+          email: data.data.parent.email,
+          name: data.data.parent.name,
+          phone: data.data.parent.phone,
+          linkedStudents: data.data.parent.linkedStudents || [],
+        };
+        
+        // Save to auth context (this will also check subscription)
+        await login(data.data.customToken, userData);
+        
+        // Navigate to dashboard
         router.replace('/(tabs)');
       } else {
         Alert.alert('Error', data.message || 'Login failed');
