@@ -4,27 +4,23 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Modal,
   ActivityIndicator,
   Alert,
   ScrollView,
   Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { SUBSCRIPTION_ENDPOINTS } from '../../src/config/api';
-
-interface PaywallProps {
-  visible: boolean;
-  studentCount: number;
-  authToken: string;
-  onSubscribed: () => void;
-  onLogout: () => void;
-}
+import { useAuth } from '../src/contexts/AuthContext';
+import { SUBSCRIPTION_ENDPOINTS } from '../src/config/api';
 
 const PRICE_PER_STUDENT = 14.99;
 
-export default function Paywall({ visible, studentCount, authToken, onSubscribed, onLogout }: PaywallProps) {
+export default function Paywall() {
+  const { user, authToken, logout, refreshSubscription } = useAuth();
   const [loading, setLoading] = useState(false);
+  
+  const studentCount = user?.students?.length || 1;
   const totalPrice = studentCount * PRICE_PER_STUDENT;
 
   const handleSubscribe = async (isDev: boolean = false) => {
@@ -48,7 +44,7 @@ export default function Paywall({ visible, studentCount, authToken, onSubscribed
 
       if (data.success) {
         Alert.alert('🎉 Subscription Activated!', 'Thank you for subscribing. You now have full access to the app.', [
-          { text: 'Continue', onPress: onSubscribed },
+          { text: 'Continue', onPress: () => refreshSubscription() },
         ]);
       } else {
         Alert.alert('Error', data.message || 'Failed to activate subscription');
@@ -70,15 +66,16 @@ export default function Paywall({ visible, studentCount, authToken, onSubscribed
   ];
 
   return (
-    <Modal visible={visible} animationType="slide" transparent={false}>
-      <View style={styles.container}>
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {/* Header */}
-          <View style={styles.header}>
-            <Image source={require('../../assets/images/Logo.png')} style={styles.logo} resizeMode="contain" />
-            <Text style={styles.title}>Unlock Full Access</Text>
-            <Text style={styles.subtitle}>Subscribe to track your children&apos;s progress</Text>
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.logoPlaceholder}>
+            <Ionicons name="school" size={40} color="#4F46E5" />
           </View>
+          <Text style={styles.title}>Unlock Full Access</Text>
+          <Text style={styles.subtitle}>Subscribe to track your children&apos;s progress</Text>
+        </View>
 
           {/* Pricing Card */}
           <View style={styles.pricingCard}>
@@ -147,7 +144,7 @@ export default function Paywall({ visible, studentCount, authToken, onSubscribed
           )}
 
           {/* Logout */}
-          <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
+          <TouchableOpacity style={styles.logoutButton} onPress={logout}>
             <Ionicons name="log-out-outline" size={18} color="#EF4444" />
             <Text style={styles.logoutText}>Sign out</Text>
           </TouchableOpacity>
@@ -169,8 +166,7 @@ export default function Paywall({ visible, studentCount, authToken, onSubscribed
             </View>
           </View>
         </ScrollView>
-      </View>
-    </Modal>
+    </SafeAreaView>
   );
 }
 
@@ -188,9 +184,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 32,
   },
-  logo: {
+  logoPlaceholder: {
     width: 80,
     height: 80,
+    borderRadius: 40,
+    backgroundColor: '#EEF2FF',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 16,
   },
   title: {
