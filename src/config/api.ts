@@ -28,6 +28,13 @@ export const API_CONFIG = {
       profile: '/parent/profile',
       students: '/parent/students',
     },
+    student: {
+      classes: (studentId: string) => `/student/${studentId}/classes`,
+      classDetails: (studentId: string, classId: string) => `/student/${studentId}/classes/${classId}`,
+      testDetails: (studentId: string, testId: string) => `/student/${studentId}/tests/${testId}`,
+      attendance: (studentId: string, classId: string) => `/student/${studentId}/classes/${classId}/attendance`,
+      progress: (studentId: string) => `/student/${studentId}/progress`,
+    },
   },
 };
 
@@ -62,5 +69,14 @@ export const PARENT_ENDPOINTS = {
   profile: getApiUrl(API_CONFIG.endpoints.parent.profile),
   students: getApiUrl(API_CONFIG.endpoints.parent.students),
 };
+
+// Student endpoints helper
+export const getStudentEndpoints = (studentId: string) => ({
+  classes: getApiUrl(API_CONFIG.endpoints.student.classes(studentId)),
+  classDetails: (classId: string) => getApiUrl(API_CONFIG.endpoints.student.classDetails(studentId, classId)),
+  testDetails: (testId: string) => getApiUrl(API_CONFIG.endpoints.student.testDetails(studentId, testId)),
+  attendance: (classId: string) => getApiUrl(API_CONFIG.endpoints.student.attendance(studentId, classId)),
+  progress: getApiUrl(API_CONFIG.endpoints.student.progress(studentId)),
+});
 
 export default API_CONFIG;
