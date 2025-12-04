@@ -7,21 +7,27 @@ import {
   ActivityIndicator,
   Alert,
   ScrollView,
-  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useAuth } from '../src/contexts/AuthContext';
 import { SUBSCRIPTION_ENDPOINTS } from '../src/config/api';
 
 const PRICE_PER_STUDENT = 14.99;
 
 export default function Paywall() {
+  const router = useRouter();
   const { user, authToken, logout, refreshSubscription } = useAuth();
   const [loading, setLoading] = useState(false);
   
   const studentCount = user?.students?.length || 1;
   const totalPrice = studentCount * PRICE_PER_STUDENT;
+
+  const handleLogout = async () => {
+    await logout();
+    router.replace('/(auth)/login');
+  };
 
   const handleSubscribe = async (isDev: boolean = false) => {
     setLoading(true);
@@ -144,7 +150,7 @@ export default function Paywall() {
           )}
 
           {/* Logout */}
-          <TouchableOpacity style={styles.logoutButton} onPress={logout}>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <Ionicons name="log-out-outline" size={18} color="#EF4444" />
             <Text style={styles.logoutText}>Sign out</Text>
           </TouchableOpacity>
