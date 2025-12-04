@@ -2,15 +2,45 @@ import { useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Image } from 'react-native';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const STORAGE_KEYS = {
+  AUTH_TOKEN: '@dru_auth_token',
+  USER_DATA: '@dru_user_data',
+  TOKEN_EXPIRY: '@dru_token_expiry',
+};
 
 export default function SplashScreen() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const token = null;
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        if (token) {
-          router.replace('/(tabs)');
+        // Get stored token and expiry
+        const [storedToken, storedUser, tokenExpiry] = await Promise.all([
+          AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN),
+          AsyncStorage.getItem(STORAGE_KEYS.USER_DATA),
+          AsyncStorage.getItem(STORAGE_KEYS.TOKEN_EXPIRY),
+        ]);
+
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        // Check if token exists and is not expired
+        if (storedToken && storedUser) {
+          const now = Date.now();
+          const expiry = tokenExpiry ? parseInt(tokenExpiry, 10) : 0;
+          
+          // If token is expired (or no expiry set), go to login
+          if (expiry && now > expiry) {
+            // Clear expired tokens
+            await Promise.all([
+              AsyncStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN),
+              AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA),
+              AsyncStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY),
+            ]);
+            router.replace('/(auth)/login');
+          } else {
+            // Token is valid, go to main app
+            router.replace('/(tabs)');
+          }
         } else {
           router.replace('/(auth)/login');
         }

@@ -44,7 +44,11 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const STORAGE_KEYS = {
   AUTH_TOKEN: '@dru_auth_token',
   USER_DATA: '@dru_user_data',
+  TOKEN_EXPIRY: '@dru_token_expiry',
 };
+
+// 30 days in milliseconds
+const TOKEN_VALIDITY_DURATION = 30 * 24 * 60 * 60 * 1000;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -59,12 +63,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadStoredAuth = async () => {
     try {
-      const [storedToken, storedUser] = await Promise.all([
+      const [storedToken, storedUser, tokenExpiry] = await Promise.all([
         AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN),
         AsyncStorage.getItem(STORAGE_KEYS.USER_DATA),
+        AsyncStorage.getItem(STORAGE_KEYS.TOKEN_EXPIRY),
       ]);
 
       if (storedToken && storedUser) {
+        const now = Date.now();
+        const expiry = tokenExpiry ? parseInt(tokenExpiry, 10) : 0;
+        
+        // Check if token is expired
+        if (expiry && now > expiry) {
+          // Clear expired tokens
+          await Promise.all([
+            AsyncStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN),
+            AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA),
+            AsyncStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY),
+          ]);
+          setIsLoading(false);
+          return;
+        }
+
         const userData = JSON.parse(storedUser);
         setAuthToken(storedToken);
         setUser(userData);
@@ -118,9 +138,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (token: string, userData: User) => {
     try {
+      // Set token expiry to 30 days from now
+      const expiryTime = Date.now() + TOKEN_VALIDITY_DURATION;
+      
       await Promise.all([
         AsyncStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token),
         AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(userData)),
+        AsyncStorage.setItem(STORAGE_KEYS.TOKEN_EXPIRY, expiryTime.toString()),
       ]);
       
       setAuthToken(token);
@@ -139,6 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await Promise.all([
         AsyncStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN),
         AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA),
+        AsyncStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY),
       ]);
       
       setUser(null);
