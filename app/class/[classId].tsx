@@ -227,60 +227,90 @@ export default function ClassDetailScreen() {
         {/* Overview Tab */}
         {activeTab === 'overview' && (
           <View style={styles.tabContent}>
-            {/* Class Info Card */}
-            <View style={styles.infoCard}>
-              <Text style={styles.cardTitle}>Class Information</Text>
-              <View style={styles.infoRow}>
-                <Ionicons name="person-outline" size={18} color="#6B7280" />
-                <Text style={styles.infoLabel}>Teacher:</Text>
-                <Text style={styles.infoValue}>{classDetails.class.teacher}</Text>
-              </View>
-              <View style={styles.infoRow}>
-                <Ionicons name="calendar-outline" size={18} color="#6B7280" />
-                <Text style={styles.infoLabel}>Year:</Text>
-                <Text style={styles.infoValue}>{classDetails.class.year}</Text>
-              </View>
-              <View style={styles.infoRow}>
-                <Ionicons name="time-outline" size={18} color="#6B7280" />
-                <Text style={styles.infoLabel}>Schedule:</Text>
-                <Text style={styles.infoValue}>
-                  {classDetails.class.schedule?.map(s => `${s.day} ${s.startTime}-${s.endTime}`).join(', ') || 'N/A'}
-                </Text>
+            {/* Performance Summary Card */}
+            <View style={styles.performanceCard}>
+              <Text style={styles.performanceTitle}>Performance Overview</Text>
+              <View style={styles.performanceGrid}>
+                <View style={styles.performanceItem}>
+                  <Text style={styles.performanceValue}>
+                    {classDetails.tests.length > 0 
+                      ? Math.round(
+                          classDetails.tests
+                            .filter(t => t.submission)
+                            .reduce((sum, t) => sum + (t.submission?.percentage || 0), 0) / 
+                          Math.max(classDetails.tests.filter(t => t.submission).length, 1)
+                        )
+                      : 0}%
+                  </Text>
+                  <Text style={styles.performanceLabel}>Average Score</Text>
+                </View>
+                <View style={styles.performanceDivider} />
+                <View style={styles.performanceItem}>
+                  <Text style={styles.performanceValue}>
+                    {classDetails.tests.filter(t => t.submission).length}/{classDetails.tests.length}
+                  </Text>
+                  <Text style={styles.performanceLabel}>Tests Completed</Text>
+                </View>
+                <View style={styles.performanceDivider} />
+                <View style={styles.performanceItem}>
+                  <Text style={styles.performanceValue}>{classDetails.attendanceStats.attendanceRate}%</Text>
+                  <Text style={styles.performanceLabel}>Attendance</Text>
+                </View>
               </View>
             </View>
 
-            {/* Stats Grid */}
+            {/* Quick Stats Grid */}
             <View style={styles.statsGrid}>
-              <View style={styles.statBox}>
-                <View style={[styles.statIcon, { backgroundColor: '#EEF2FF' }]}>
-                  <Ionicons name="document-text-outline" size={24} color="#6366F1" />
-                </View>
-                <Text style={styles.statNumber}>{classDetails.tests.length}</Text>
-                <Text style={styles.statLabel}>Total Tests</Text>
-              </View>
               <View style={styles.statBox}>
                 <View style={[styles.statIcon, { backgroundColor: '#DEF7EC' }]}>
                   <Ionicons name="checkmark-circle-outline" size={24} color="#10B981" />
                 </View>
-                <Text style={styles.statNumber}>
-                  {classDetails.tests.filter(t => t.submission).length}
-                </Text>
-                <Text style={styles.statLabel}>Completed</Text>
+                <Text style={styles.statNumber}>{classDetails.attendanceStats.present}</Text>
+                <Text style={styles.statLabel}>Classes Present</Text>
+              </View>
+              <View style={styles.statBox}>
+                <View style={[styles.statIcon, { backgroundColor: '#FEE2E2' }]}>
+                  <Ionicons name="close-circle-outline" size={24} color="#EF4444" />
+                </View>
+                <Text style={styles.statNumber}>{classDetails.attendanceStats.absent}</Text>
+                <Text style={styles.statLabel}>Classes Absent</Text>
               </View>
               <View style={styles.statBox}>
                 <View style={[styles.statIcon, { backgroundColor: '#FEF3C7' }]}>
-                  <Ionicons name="calendar-outline" size={24} color="#F59E0B" />
+                  <Ionicons name="time-outline" size={24} color="#F59E0B" />
                 </View>
-                <Text style={styles.statNumber}>{classDetails.attendanceStats.totalClasses}</Text>
-                <Text style={styles.statLabel}>Classes</Text>
+                <Text style={styles.statNumber}>{classDetails.attendanceStats.late}</Text>
+                <Text style={styles.statLabel}>Late</Text>
               </View>
               <View style={styles.statBox}>
-                <View style={[styles.statIcon, { backgroundColor: '#E0E7FF' }]}>
-                  <Ionicons name="stats-chart-outline" size={24} color="#6366F1" />
+                <View style={[styles.statIcon, { backgroundColor: '#EEF2FF' }]}>
+                  <Ionicons name="document-text-outline" size={24} color="#6366F1" />
                 </View>
-                <Text style={styles.statNumber}>{classDetails.attendanceStats.attendanceRate}%</Text>
-                <Text style={styles.statLabel}>Attendance</Text>
+                <Text style={styles.statNumber}>
+                  {classDetails.tests.filter(t => !t.submission && t.status !== 'completed').length}
+                </Text>
+                <Text style={styles.statLabel}>Pending Tests</Text>
               </View>
+            </View>
+
+            {/* Class Info Summary */}
+            <View style={styles.infoSummary}>
+              <View style={styles.infoSummaryRow}>
+                <Ionicons name="person-outline" size={16} color="#6B7280" />
+                <Text style={styles.infoSummaryText}>Teacher: {classDetails.class.teacher}</Text>
+              </View>
+              <View style={styles.infoSummaryRow}>
+                <Ionicons name="calendar-outline" size={16} color="#6B7280" />
+                <Text style={styles.infoSummaryText}>Year: {classDetails.class.year}</Text>
+              </View>
+              {classDetails.class.schedule?.length > 0 && (
+                <View style={styles.infoSummaryRow}>
+                  <Ionicons name="time-outline" size={16} color="#6B7280" />
+                  <Text style={styles.infoSummaryText}>
+                    {classDetails.class.schedule.map(s => `${s.day} ${s.startTime}-${s.endTime}`).join(', ')}
+                  </Text>
+                </View>
+              )}
             </View>
 
             {/* Recent Tests Preview */}
@@ -575,6 +605,58 @@ const styles = StyleSheet.create({
   },
   tabContent: {
     padding: 16,
+  },
+  performanceCard: {
+    backgroundColor: '#6366F1',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+  },
+  performanceTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginBottom: 16,
+  },
+  performanceGrid: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+  },
+  performanceItem: {
+    alignItems: 'center',
+  },
+  performanceValue: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  performanceLabel: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginTop: 4,
+  },
+  performanceDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  infoSummary: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+    gap: 10,
+  },
+  infoSummaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  infoSummaryText: {
+    fontSize: 14,
+    color: '#4B5563',
+    flex: 1,
   },
   infoCard: {
     backgroundColor: '#FFFFFF',
