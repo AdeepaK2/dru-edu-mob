@@ -53,9 +53,10 @@ export default function LoginScreen() {
         
         // Use idToken for API calls (not customToken)
         const token = data.data.idToken || data.data.customToken;
+        const refreshToken = data.data.refreshToken || '';
         
         // Save to auth context (this will also check subscription)
-        await login(token, userData);
+        await login(token, refreshToken, userData);
         
         // Navigate to dashboard
         router.replace('/(tabs)');
