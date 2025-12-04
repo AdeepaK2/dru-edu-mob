@@ -252,9 +252,9 @@ export default function TestDetailScreen() {
             </View>
           </View>
 
-          {test.description && (
+          {test.description ? (
             <Text style={styles.testDescription}>{test.description}</Text>
-          )}
+          ) : null}
 
           <View style={styles.testMetaGrid}>
             <View style={styles.testMetaItem}>
@@ -303,11 +303,11 @@ export default function TestDetailScreen() {
                     {submission.totalScore} / {submission.maxPossibleScore}
                   </Text>
                   <Text style={styles.scoreSubtext}>points earned</Text>
-                  {submission.timeTaken && (
+                  {submission.timeTaken ? (
                     <Text style={styles.timeTaken}>
                       Time: {formatDuration(submission.timeTaken)}
                     </Text>
-                  )}
+                  ) : null}
                 </View>
               </View>
 
