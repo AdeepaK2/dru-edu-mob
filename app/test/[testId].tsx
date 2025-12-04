@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  Linking,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -120,6 +122,20 @@ export default function TestDetailScreen() {
       newExpanded.add(index);
     }
     setExpandedQuestions(newExpanded);
+  };
+
+  const handleDownloadPdf = async (fileUrl: string, fileName: string) => {
+    try {
+      const canOpen = await Linking.canOpenURL(fileUrl);
+      if (canOpen) {
+        await Linking.openURL(fileUrl);
+      } else {
+        Alert.alert('Error', 'Unable to open this file. The link may be invalid.');
+      }
+    } catch (error) {
+      console.error('Error opening PDF:', error);
+      Alert.alert('Error', 'Failed to open the PDF file. Please try again.');
+    }
   };
 
   const getScoreColor = (percentage: number) => {
@@ -394,18 +410,37 @@ export default function TestDetailScreen() {
 
                     {answer.questionType === 'essay' && (
                       <View style={styles.essayAnswer}>
-                        <Text style={styles.answerLabel}>Your Answer:</Text>
-                        <Text style={styles.answerText}>
-                          {answer.textAnswer || 'No text answer provided'}
-                        </Text>
+                        <Text style={styles.answerLabel}>Student's Answer:</Text>
+                        {answer.textAnswer ? (
+                          <View style={styles.textAnswerBox}>
+                            <Text style={styles.answerText}>{answer.textAnswer}</Text>
+                          </View>
+                        ) : (
+                          <Text style={styles.noAnswerText}>No text answer provided</Text>
+                        )}
                         {answer.pdfFiles && answer.pdfFiles.length > 0 && (
                           <View style={styles.attachments}>
-                            <Text style={styles.attachmentLabel}>Attachments:</Text>
+                            <Text style={styles.attachmentLabel}>
+                              <Ionicons name="attach" size={14} color="#6B7280" /> Submitted Files:
+                            </Text>
                             {answer.pdfFiles.map((file, fileIndex) => (
-                              <View key={fileIndex} style={styles.attachmentItem}>
-                                <Ionicons name="document-outline" size={16} color="#6366F1" />
-                                <Text style={styles.attachmentName}>{file.fileName}</Text>
-                              </View>
+                              <TouchableOpacity 
+                                key={fileIndex} 
+                                style={styles.downloadButton}
+                                onPress={() => handleDownloadPdf(file.fileUrl, file.fileName)}
+                                activeOpacity={0.7}
+                              >
+                                <View style={styles.downloadIconWrapper}>
+                                  <Ionicons name="document-text" size={20} color="#FFFFFF" />
+                                </View>
+                                <View style={styles.downloadInfo}>
+                                  <Text style={styles.downloadFileName} numberOfLines={1}>
+                                    {file.fileName || `Submission ${fileIndex + 1}.pdf`}
+                                  </Text>
+                                  <Text style={styles.downloadHint}>Tap to view/download</Text>
+                                </View>
+                                <Ionicons name="download-outline" size={20} color="#6366F1" />
+                              </TouchableOpacity>
                             ))}
                           </View>
                         )}
@@ -766,13 +801,22 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     marginBottom: 6,
   },
+  textAnswerBox: {
+    backgroundColor: '#F9FAFB',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
   answerText: {
     fontSize: 14,
     color: '#1F2937',
     lineHeight: 20,
-    backgroundColor: '#F9FAFB',
-    padding: 12,
-    borderRadius: 8,
+  },
+  noAnswerText: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    fontStyle: 'italic',
   },
   attachments: {
     marginTop: 12,
@@ -781,17 +825,39 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: '#6B7280',
-    marginBottom: 6,
+    marginBottom: 8,
   },
-  attachmentItem: {
+  downloadButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingVertical: 6,
+    backgroundColor: '#FFFFFF',
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E0E7FF',
+    marginBottom: 8,
+    gap: 12,
   },
-  attachmentName: {
-    fontSize: 13,
-    color: '#6366F1',
+  downloadIconWrapper: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: '#6366F1',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  downloadInfo: {
+    flex: 1,
+  },
+  downloadFileName: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#1F2937',
+  },
+  downloadHint: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    marginTop: 2,
   },
   feedbackBox: {
     flexDirection: 'row',
