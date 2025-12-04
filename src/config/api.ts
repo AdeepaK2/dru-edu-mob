@@ -11,6 +11,8 @@ export const API_CONFIG = {
       login: '/auth/login',
       signup: '/auth/signup',
       verifyEmail: '/auth/verify-email',
+      verifyOtp: '/auth/verify-otp',
+      resendOtp: '/auth/resend-otp',
       logout: '/auth/logout',
     },
     parent: {
@@ -30,6 +32,8 @@ export const AUTH_ENDPOINTS = {
   login: getApiUrl(API_CONFIG.endpoints.auth.login),
   signup: getApiUrl(API_CONFIG.endpoints.auth.signup),
   verifyEmail: getApiUrl(API_CONFIG.endpoints.auth.verifyEmail),
+  verifyOtp: getApiUrl(API_CONFIG.endpoints.auth.verifyOtp),
+  resendOtp: getApiUrl(API_CONFIG.endpoints.auth.resendOtp),
   logout: getApiUrl(API_CONFIG.endpoints.auth.logout),
 };
 

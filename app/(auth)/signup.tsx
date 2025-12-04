@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   StyleSheet,
   TextInput,
@@ -20,6 +20,7 @@ import { AUTH_ENDPOINTS } from '../../src/config/api';
 export default function SignupScreen() {
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
@@ -27,6 +28,16 @@ export default function SignupScreen() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [linkedStudents, setLinkedStudents] = useState<any[]>([]);
+  const [resendTimer, setResendTimer] = useState(0);
+  
+  const otpInputs = useRef<(TextInput | null)[]>([]);
+
+  useEffect(() => {
+    if (resendTimer > 0) {
+      const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendTimer]);
 
   const handleVerifyEmail = async () => {
     if (!email) {
@@ -49,9 +60,99 @@ export default function SignupScreen() {
         setName(data.data.parentInfo?.name || '');
         setPhone(data.data.parentInfo?.phone || '');
         setStep(2);
-        Alert.alert('✅ Email Verified', `Found ${data.data.studentsCount} student(s) linked to this email`);
+        setResendTimer(60);
+        Alert.alert('📧 OTP Sent', `A verification code has been sent to ${email}`);
       } else {
         Alert.alert('❌ Email Not Found', data.message || 'This email is not registered in our student records.');
+      }
+    } catch {
+      Alert.alert('Error', 'Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOtpChange = (value: string, index: number) => {
+    if (value.length > 1) {
+      const pastedOtp = value.slice(0, 6).split('');
+      const newOtp = [...otp];
+      pastedOtp.forEach((digit, i) => {
+        if (i < 6) newOtp[i] = digit;
+      });
+      setOtp(newOtp);
+      if (pastedOtp.length === 6) {
+        otpInputs.current[5]?.focus();
+      }
+      return;
+    }
+
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+
+    if (value && index < 5) {
+      otpInputs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyPress = (key: string, index: number) => {
+    if (key === 'Backspace' && !otp[index] && index > 0) {
+      otpInputs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    const otpCode = otp.join('');
+    if (otpCode.length !== 6) {
+      Alert.alert('Error', 'Please enter the complete 6-digit code');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch(AUTH_ENDPOINTS.verifyOtp, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp: otpCode }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setLinkedStudents(data.data.students || linkedStudents);
+        if (data.data.parentInfo?.name) setName(data.data.parentInfo.name);
+        if (data.data.parentInfo?.phone) setPhone(data.data.parentInfo.phone);
+        setStep(3);
+        Alert.alert('✅ Verified', 'Your email has been verified successfully!');
+      } else {
+        Alert.alert('❌ Invalid Code', data.message || 'The verification code is incorrect.');
+      }
+    } catch {
+      Alert.alert('Error', 'Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (resendTimer > 0) return;
+    
+    setLoading(true);
+    try {
+      const response = await fetch(AUTH_ENDPOINTS.resendOtp, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setOtp(['', '', '', '', '', '']);
+        setResendTimer(60);
+        Alert.alert('📧 Code Resent', 'A new verification code has been sent to your email.');
+      } else {
+        Alert.alert('Error', data.message || 'Failed to resend code.');
       }
     } catch {
       Alert.alert('Error', 'Network error. Please try again.');
@@ -100,6 +201,29 @@ export default function SignupScreen() {
     }
   };
 
+  const renderStepIndicator = () => (
+    <View style={styles.stepIndicator}>
+      <View style={styles.stepRow}>
+        <View style={[styles.stepCircle, step >= 1 && styles.stepCircleActive]}>
+          {step > 1 ? <Ionicons name="checkmark" size={16} color="#fff" /> : <Text style={[styles.stepNumber, step >= 1 && styles.stepNumberActive]}>1</Text>}
+        </View>
+        <View style={[styles.stepLine, step >= 2 && styles.stepLineActive]} />
+        <View style={[styles.stepCircle, step >= 2 && styles.stepCircleActive]}>
+          {step > 2 ? <Ionicons name="checkmark" size={16} color="#fff" /> : <Text style={[styles.stepNumber, step >= 2 && styles.stepNumberActive]}>2</Text>}
+        </View>
+        <View style={[styles.stepLine, step >= 3 && styles.stepLineActive]} />
+        <View style={[styles.stepCircle, step >= 3 && styles.stepCircleActive]}>
+          <Text style={[styles.stepNumber, step >= 3 && styles.stepNumberActive]}>3</Text>
+        </View>
+      </View>
+      <View style={styles.stepLabels}>
+        <Text style={[styles.stepLabel, step >= 1 && styles.stepLabelActive]}>Email</Text>
+        <Text style={[styles.stepLabel, step >= 2 && styles.stepLabelActive]}>Verify</Text>
+        <Text style={[styles.stepLabel, step >= 3 && styles.stepLabelActive]}>Details</Text>
+      </View>
+    </View>
+  );
+
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
       <StatusBar style="light" />
@@ -110,23 +234,9 @@ export default function SignupScreen() {
       </View>
 
       <ScrollView style={styles.formContainer} contentContainerStyle={styles.formContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.stepIndicator}>
-          <View style={styles.stepRow}>
-            <View style={[styles.stepCircle, step >= 1 && styles.stepCircleActive]}>
-              {step > 1 ? <Ionicons name="checkmark" size={16} color="#fff" /> : <Text style={[styles.stepNumber, step >= 1 && styles.stepNumberActive]}>1</Text>}
-            </View>
-            <View style={[styles.stepLine, step >= 2 && styles.stepLineActive]} />
-            <View style={[styles.stepCircle, step >= 2 && styles.stepCircleActive]}>
-              <Text style={[styles.stepNumber, step >= 2 && styles.stepNumberActive]}>2</Text>
-            </View>
-          </View>
-          <View style={styles.stepLabels}>
-            <Text style={[styles.stepLabel, step >= 1 && styles.stepLabelActive]}>Verify Email</Text>
-            <Text style={[styles.stepLabel, step >= 2 && styles.stepLabelActive]}>Account Details</Text>
-          </View>
-        </View>
+        {renderStepIndicator()}
 
-        {step === 1 ? (
+        {step === 1 && (
           <>
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Verify Your Email</Text>
@@ -144,10 +254,53 @@ export default function SignupScreen() {
             </View>
 
             <TouchableOpacity style={[styles.button, loading && styles.buttonDisabled]} onPress={handleVerifyEmail} disabled={loading}>
-              {loading ? <ActivityIndicator color="#fff" /> : <><Text style={styles.buttonText}>Verify Email</Text><Ionicons name="arrow-forward" size={20} color="#fff" /></>}
+              {loading ? <ActivityIndicator color="#fff" /> : <><Text style={styles.buttonText}>Send Verification Code</Text><Ionicons name="arrow-forward" size={20} color="#fff" /></>}
             </TouchableOpacity>
           </>
-        ) : (
+        )}
+
+        {step === 2 && (
+          <>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Enter Verification Code</Text>
+              <Text style={styles.sectionDescription}>We sent a 6-digit code to {email}</Text>
+            </View>
+
+            <View style={styles.otpContainer}>
+              {otp.map((digit, index) => (
+                <TextInput
+                  key={index}
+                  ref={(ref) => { otpInputs.current[index] = ref; }}
+                  style={[styles.otpInput, digit && styles.otpInputFilled]}
+                  value={digit}
+                  onChangeText={(value) => handleOtpChange(value, index)}
+                  onKeyPress={({ nativeEvent }) => handleOtpKeyPress(nativeEvent.key, index)}
+                  keyboardType="number-pad"
+                  maxLength={1}
+                  selectTextOnFocus
+                />
+              ))}
+            </View>
+
+            <TouchableOpacity style={styles.resendButton} onPress={handleResendOtp} disabled={resendTimer > 0 || loading}>
+              <Ionicons name="refresh" size={18} color={resendTimer > 0 ? '#9CA3AF' : '#4F46E5'} />
+              <Text style={[styles.resendText, resendTimer > 0 && styles.resendTextDisabled]}>
+                {resendTimer > 0 ? `Resend code in ${resendTimer}s` : 'Resend code'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.button, loading && styles.buttonDisabled]} onPress={handleVerifyOtp} disabled={loading}>
+              {loading ? <ActivityIndicator color="#fff" /> : <><Text style={styles.buttonText}>Verify Code</Text><Ionicons name="checkmark" size={20} color="#fff" /></>}
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.backButton} onPress={() => { setStep(1); setOtp(['', '', '', '', '', '']); }}>
+              <Ionicons name="arrow-back" size={18} color="#6B7280" />
+              <Text style={styles.backButtonText}>Change email address</Text>
+            </TouchableOpacity>
+          </>
+        )}
+
+        {step === 3 && (
           <>
             {linkedStudents.length > 0 && (
               <View style={styles.studentsCard}>
@@ -199,9 +352,9 @@ export default function SignupScreen() {
               {loading ? <ActivityIndicator color="#fff" /> : <><Text style={styles.buttonText}>Create Account</Text><Ionicons name="checkmark" size={20} color="#fff" /></>}
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.backButton} onPress={() => setStep(1)}>
+            <TouchableOpacity style={styles.backButton} onPress={() => setStep(2)}>
               <Ionicons name="arrow-back" size={18} color="#6B7280" />
-              <Text style={styles.backButtonText}>Back to email verification</Text>
+              <Text style={styles.backButtonText}>Back to verification</Text>
             </TouchableOpacity>
           </>
         )}
@@ -232,9 +385,9 @@ const styles = StyleSheet.create({
   stepCircleActive: { backgroundColor: '#4F46E5' },
   stepNumber: { fontSize: 14, fontWeight: '600', color: '#9CA3AF' },
   stepNumberActive: { color: '#FFFFFF' },
-  stepLine: { width: 80, height: 3, backgroundColor: '#E5E7EB', marginHorizontal: 8, borderRadius: 2 },
+  stepLine: { width: 50, height: 3, backgroundColor: '#E5E7EB', marginHorizontal: 6, borderRadius: 2 },
   stepLineActive: { backgroundColor: '#4F46E5' },
-  stepLabels: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 10, marginTop: 8 },
+  stepLabels: { flexDirection: 'row', justifyContent: 'space-around', paddingHorizontal: 10, marginTop: 8 },
   stepLabel: { fontSize: 12, color: '#9CA3AF' },
   stepLabelActive: { color: '#4F46E5', fontWeight: '600' },
   section: { marginBottom: 20 },
@@ -246,6 +399,12 @@ const styles = StyleSheet.create({
   input: { flex: 1, paddingVertical: 16, fontSize: 16, color: '#1F2937' },
   infoCard: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: '#EEF2FF', borderRadius: 12, padding: 14, marginBottom: 20, gap: 10 },
   infoText: { flex: 1, fontSize: 13, color: '#4338CA', lineHeight: 20 },
+  otpContainer: { flexDirection: 'row', justifyContent: 'center', gap: 10, marginBottom: 24 },
+  otpInput: { width: 48, height: 56, borderRadius: 12, borderWidth: 2, borderColor: '#E5E7EB', backgroundColor: '#FFFFFF', textAlign: 'center', fontSize: 24, fontWeight: '700', color: '#1F2937' },
+  otpInputFilled: { borderColor: '#4F46E5', backgroundColor: '#EEF2FF' },
+  resendButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 20 },
+  resendText: { fontSize: 15, color: '#4F46E5', fontWeight: '600' },
+  resendTextDisabled: { color: '#9CA3AF' },
   button: { backgroundColor: '#4F46E5', borderRadius: 14, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, shadowColor: '#4F46E5', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
   buttonDisabled: { opacity: 0.7 },
   buttonText: { color: '#FFFFFF', fontSize: 17, fontWeight: '600' },
