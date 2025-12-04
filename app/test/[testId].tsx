@@ -312,26 +312,26 @@ export default function TestDetailScreen() {
               </View>
 
               {/* Score Breakdown */}
-              {(submission.mcqScore || submission.essayScore) && (
+              {(submission.mcqScore || submission.essayScore) ? (
                 <View style={styles.scoreBreakdown}>
-                  {submission.mcqScore && (
+                  {submission.mcqScore ? (
                     <View style={styles.breakdownItem}>
                       <Text style={styles.breakdownLabel}>MCQ</Text>
                       <Text style={styles.breakdownValue}>
-                        {submission.mcqScore.earned}/{submission.mcqScore.total}
+                        {submission.mcqScore.earned ?? 0}/{submission.mcqScore.total ?? 0}
                       </Text>
                     </View>
-                  )}
-                  {submission.essayScore && (
+                  ) : null}
+                  {submission.essayScore ? (
                     <View style={styles.breakdownItem}>
                       <Text style={styles.breakdownLabel}>Essay</Text>
                       <Text style={styles.breakdownValue}>
-                        {submission.essayScore.earned}/{submission.essayScore.total}
+                        {submission.essayScore.earned ?? 0}/{submission.essayScore.total ?? 0}
                       </Text>
                     </View>
-                  )}
+                  ) : null}
                 </View>
-              )}
+              ) : null}
             </View>
 
             {/* Questions Review */}
@@ -379,12 +379,12 @@ export default function TestDetailScreen() {
                   />
                 </View>
 
-                {expandedQuestions.has(index) && (
+                {expandedQuestions.has(index) ? (
                   <View style={styles.questionDetails}>
                     <Text style={styles.questionText}>{answer.questionText || 'Question text not available'}</Text>
                     
                     {/* Question Image */}
-                    {answer.questionImageUrl && (
+                    {answer.questionImageUrl ? (
                       <View style={styles.questionImageContainer}>
                         <Image 
                           source={{ uri: answer.questionImageUrl }} 
@@ -392,9 +392,9 @@ export default function TestDetailScreen() {
                           resizeMode="contain"
                         />
                       </View>
-                    )}
+                    ) : null}
                     
-                    {answer.questionType === 'mcq' && answer.options && answer.options.length > 0 && (
+                    {answer.questionType === 'mcq' && answer.options && answer.options.length > 0 ? (
                       <View style={styles.optionsContainer}>
                         {answer.options.map((option, optIndex) => (
                           <View 
@@ -419,47 +419,47 @@ export default function TestDetailScreen() {
                             </View>
                             <View style={styles.optionContent}>
                               <Text style={styles.optionText}>
-                                {typeof option === 'string' ? option : option.text}
+                                {typeof option === 'string' ? option : (option?.text || `Option ${String.fromCharCode(65 + optIndex)}`)}
                               </Text>
                               {/* Option Image */}
-                              {typeof option === 'object' && option.imageUrl && (
+                              {typeof option === 'object' && option?.imageUrl ? (
                                 <Image 
                                   source={{ uri: option.imageUrl }} 
                                   style={styles.optionImage}
                                   resizeMode="contain"
                                 />
-                              )}
+                              ) : null}
                             </View>
-                            {answer.correctOption === optIndex && (
+                            {answer.correctOption === optIndex ? (
                               <Ionicons name="checkmark-circle" size={18} color="#10B981" />
-                            )}
-                            {answer.selectedOption === optIndex && answer.selectedOption !== answer.correctOption && (
+                            ) : null}
+                            {answer.selectedOption === optIndex && answer.selectedOption !== answer.correctOption ? (
                               <Ionicons name="close-circle" size={18} color="#EF4444" />
-                            )}
+                            ) : null}
                           </View>
                         ))}
                       </View>
-                    )}
+                    ) : null}
                     
                     {/* Explanation for MCQ (shown after answering) */}
-                    {answer.questionType === 'mcq' && answer.explanation && (
+                    {answer.questionType === 'mcq' && answer.explanation ? (
                       <View style={styles.explanationBox}>
                         <View style={styles.explanationHeader}>
                           <Ionicons name="bulb-outline" size={16} color="#059669" />
                           <Text style={styles.explanationTitle}>Explanation</Text>
                         </View>
                         <Text style={styles.explanationText}>{answer.explanation}</Text>
-                        {answer.explanationImageUrl && (
+                        {answer.explanationImageUrl ? (
                           <Image 
                             source={{ uri: answer.explanationImageUrl }} 
                             style={styles.explanationImage}
                             resizeMode="contain"
                           />
-                        )}
+                        ) : null}
                       </View>
-                    )}
+                    ) : null}
 
-                    {answer.questionType === 'essay' && (
+                    {answer.questionType === 'essay' ? (
                       <View style={styles.essayAnswer}>
                         <Text style={styles.answerLabel}>Student's Answer:</Text>
                         {answer.textAnswer ? (
@@ -469,7 +469,7 @@ export default function TestDetailScreen() {
                         ) : (
                           <Text style={styles.noAnswerText}>No text answer provided</Text>
                         )}
-                        {answer.pdfFiles && answer.pdfFiles.length > 0 && (
+                        {answer.pdfFiles && answer.pdfFiles.length > 0 ? (
                           <View style={styles.attachments}>
                             <View style={styles.attachmentLabelRow}>
                               <Ionicons name="attach" size={14} color="#6B7280" />
@@ -495,18 +495,18 @@ export default function TestDetailScreen() {
                               </TouchableOpacity>
                             ))}
                           </View>
-                        )}
+                        ) : null}
                       </View>
-                    )}
+                    ) : null}
 
-                    {answer.feedback && (
+                    {answer.feedback ? (
                       <View style={styles.feedbackBox}>
                         <Ionicons name="chatbox-outline" size={16} color="#6366F1" />
                         <Text style={styles.feedbackText}>{answer.feedback}</Text>
                       </View>
-                    )}
+                    ) : null}
                   </View>
-                )}
+                ) : null}
               </TouchableOpacity>
               ))
             ) : (
