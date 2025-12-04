@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/src/contexts/AuthContext';
+import { useStudent } from '@/src/contexts/StudentContext';
 import Paywall from '@/components/Paywall';
 
 interface MenuItem {
@@ -27,6 +28,7 @@ interface MenuItem {
 export default function ProfileScreen() {
   const router = useRouter();
   const { user, hasActiveSubscription, isLoading, logout } = useAuth();
+  const { students, selectedStudent } = useStudent();
 
   const handleLogout = () => {
     Alert.alert(
@@ -60,7 +62,7 @@ export default function ProfileScreen() {
           id: 'students',
           icon: 'people-outline',
           label: 'My Students',
-          subtitle: `${user?.students?.length || 0} students`,
+          subtitle: `${students.length} student${students.length !== 1 ? 's' : ''}`,
           showArrow: true,
         },
         {
@@ -147,7 +149,7 @@ export default function ProfileScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
@@ -174,6 +176,21 @@ export default function ProfileScreen() {
           <Text style={styles.userEmail}>{user?.email || ''}</Text>
           <Text style={styles.userPhone}>{user?.phone || ''}</Text>
         </View>
+
+        {/* Current Student Indicator */}
+        {selectedStudent && (
+          <View style={styles.currentStudentCard}>
+            <Text style={styles.currentStudentLabel}>Currently Viewing</Text>
+            <View style={styles.currentStudentRow}>
+              <View style={styles.currentStudentAvatar}>
+                <Text style={styles.currentStudentAvatarText}>
+                  {selectedStudent.studentName.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+              <Text style={styles.currentStudentName}>{selectedStudent.studentName}</Text>
+            </View>
+          </View>
+        )}
 
         {/* Menu Sections */}
         {menuSections.map((section, sectionIndex) => (
@@ -262,6 +279,44 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
+  },
+  currentStudentCard: {
+    marginHorizontal: 20,
+    marginTop: 16,
+    backgroundColor: '#EEF2FF',
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+  },
+  currentStudentLabel: {
+    fontSize: 12,
+    color: '#6366F1',
+    fontWeight: '500',
+    marginBottom: 8,
+  },
+  currentStudentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  currentStudentAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#6366F1',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  currentStudentAvatarText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  currentStudentName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginLeft: 10,
   },
   avatarContainer: {
     position: 'relative',

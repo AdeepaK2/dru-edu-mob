@@ -13,6 +13,7 @@ export const API_CONFIG = {
       verifyEmail: '/auth/verify-email',
       verifyOtp: '/auth/verify-otp',
       resendOtp: '/auth/resend-otp',
+      refreshToken: '/auth/refresh-token',
       logout: '/auth/logout',
       profile: '/auth/profile',
     },
@@ -42,6 +43,7 @@ export const AUTH_ENDPOINTS = {
   verifyEmail: getApiUrl(API_CONFIG.endpoints.auth.verifyEmail),
   verifyOtp: getApiUrl(API_CONFIG.endpoints.auth.verifyOtp),
   resendOtp: getApiUrl(API_CONFIG.endpoints.auth.resendOtp),
+  refreshToken: getApiUrl(API_CONFIG.endpoints.auth.refreshToken),
   logout: getApiUrl(API_CONFIG.endpoints.auth.logout),
   profile: getApiUrl(API_CONFIG.endpoints.auth.profile),
 };

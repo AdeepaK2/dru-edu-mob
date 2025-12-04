@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/src/contexts/AuthContext';
+import { useStudent } from '@/src/contexts/StudentContext';
 import Paywall from '@/components/Paywall';
 
 interface Message {
@@ -24,6 +25,7 @@ interface Message {
 
 export default function MessagesScreen() {
   const { hasActiveSubscription, isLoading } = useAuth();
+  const { selectedStudent } = useStudent();
   const [refreshing, setRefreshing] = React.useState(false);
 
   // Mock data - replace with actual API call
@@ -87,13 +89,15 @@ export default function MessagesScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <View>
           <Text style={styles.headerTitle}>Messages</Text>
-          {unreadCount > 0 && (
+          {selectedStudent ? (
+            <Text style={styles.studentIndicator}>{selectedStudent.studentName}</Text>
+          ) : unreadCount > 0 ? (
             <Text style={styles.unreadCount}>{unreadCount} unread</Text>
-          )}
+          ) : null}
         </View>
         <TouchableOpacity style={styles.composeBtn}>
           <Ionicons name="create-outline" size={24} color="#6366F1" />
@@ -171,6 +175,11 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '700',
     color: '#1F2937',
+  },
+  studentIndicator: {
+    fontSize: 14,
+    color: '#6366F1',
+    marginTop: 2,
   },
   unreadCount: {
     fontSize: 14,

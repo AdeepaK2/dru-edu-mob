@@ -21,7 +21,8 @@ export default function Paywall() {
   const { user, authToken, logout, refreshSubscription } = useAuth();
   const [loading, setLoading] = useState(false);
   
-  const studentCount = user?.students?.length || 1;
+  // Use linkedStudents instead of students
+  const studentCount = user?.linkedStudents?.length || 1;
   const totalPrice = studentCount * PRICE_PER_STUDENT;
 
   const handleLogout = async () => {
@@ -37,6 +38,8 @@ export default function Paywall() {
         ? { studentCount, activate: true }
         : { studentCount, platform: 'android', transactionId: `txn_${Date.now()}` };
 
+      console.log('🔄 Subscribing...', { endpoint, body });
+
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
@@ -47,15 +50,17 @@ export default function Paywall() {
       });
 
       const data = await response.json();
+      console.log('📦 Subscription response:', data);
 
       if (data.success) {
-        Alert.alert('🎉 Subscription Activated!', 'Thank you for subscribing. You now have full access to the app.', [
-          { text: 'Continue', onPress: () => refreshSubscription() },
-        ]);
+        // Refresh subscription status immediately
+        await refreshSubscription();
+        Alert.alert('🎉 Subscription Activated!', 'Thank you for subscribing. You now have full access to the app.');
       } else {
         Alert.alert('Error', data.message || 'Failed to activate subscription');
       }
-    } catch {
+    } catch (error) {
+      console.error('❌ Subscription error:', error);
       Alert.alert('Error', 'Network error. Please try again.');
     } finally {
       setLoading(false);

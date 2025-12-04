@@ -33,7 +33,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   hasActiveSubscription: boolean;
-  login: (token: string, userData: User) => Promise<void>;
+  login: (token: string, refreshToken: string, userData: User) => Promise<void>;
   logout: () => Promise<void>;
   refreshSubscription: () => Promise<void>;
   setSubscription: (sub: Subscription) => void;
@@ -43,12 +43,13 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const STORAGE_KEYS = {
   AUTH_TOKEN: '@dru_auth_token',
+  REFRESH_TOKEN: '@dru_refresh_token',
   USER_DATA: '@dru_user_data',
   TOKEN_EXPIRY: '@dru_token_expiry',
 };
 
-// 30 days in milliseconds
-const TOKEN_VALIDITY_DURATION = 30 * 24 * 60 * 60 * 1000;
+// idToken expires in 1 hour - we'll refresh a bit before
+const TOKEN_VALIDITY_DURATION = 55 * 60 * 1000; // 55 minutes
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -61,36 +62,95 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loadStoredAuth();
   }, []);
 
+  const refreshAuthToken = async (): Promise<string | null> => {
+    try {
+      const storedRefreshToken = await AsyncStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+      if (!storedRefreshToken) {
+        console.log('❌ No refresh token available');
+        return null;
+      }
+
+      console.log('🔄 Refreshing access token...');
+      const response = await fetch(AUTH_ENDPOINTS.refreshToken, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refreshToken: storedRefreshToken }),
+      });
+
+      const data = await response.json();
+      
+      if (data.success && data.data) {
+        const { idToken, refreshToken: newRefreshToken, expiresIn } = data.data;
+        
+        // Store new tokens
+        const expiryTime = Date.now() + (parseInt(expiresIn, 10) * 1000) - 300000; // Subtract 5 mins buffer
+        await Promise.all([
+          AsyncStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, idToken),
+          AsyncStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken),
+          AsyncStorage.setItem(STORAGE_KEYS.TOKEN_EXPIRY, expiryTime.toString()),
+        ]);
+        
+        setAuthToken(idToken);
+        console.log('✅ Token refreshed successfully');
+        return idToken;
+      } else {
+        console.log('❌ Failed to refresh token:', data.message);
+        return null;
+      }
+    } catch (error) {
+      console.error('Error refreshing token:', error);
+      return null;
+    }
+  };
+
+  const getValidToken = async (): Promise<string | null> => {
+    const tokenExpiry = await AsyncStorage.getItem(STORAGE_KEYS.TOKEN_EXPIRY);
+    const now = Date.now();
+    const expiry = tokenExpiry ? parseInt(tokenExpiry, 10) : 0;
+    
+    // If token is expired or about to expire, refresh it
+    if (!expiry || now > expiry) {
+      console.log('🔄 Token expired, attempting refresh...');
+      return await refreshAuthToken();
+    }
+    
+    return authToken;
+  };
+
   const loadStoredAuth = async () => {
     try {
-      const [storedToken, storedUser, tokenExpiry] = await Promise.all([
+      const [storedToken, storedUser, storedRefreshToken] = await Promise.all([
         AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN),
         AsyncStorage.getItem(STORAGE_KEYS.USER_DATA),
-        AsyncStorage.getItem(STORAGE_KEYS.TOKEN_EXPIRY),
+        AsyncStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN),
       ]);
 
       if (storedToken && storedUser) {
-        const now = Date.now();
-        const expiry = tokenExpiry ? parseInt(tokenExpiry, 10) : 0;
-        
-        // Check if token is expired
-        if (expiry && now > expiry) {
-          // Clear expired tokens
-          await Promise.all([
-            AsyncStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN),
-            AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA),
-            AsyncStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY),
-          ]);
-          setIsLoading(false);
-          return;
-        }
-
         const userData = JSON.parse(storedUser);
         setAuthToken(storedToken);
         setUser(userData);
         
-        // Fetch subscription status
-        await fetchSubscriptionStatus(storedToken);
+        // Try to get valid token (refresh if needed)
+        const validToken = await getValidToken();
+        
+        if (validToken) {
+          // Fetch subscription status with valid token
+          await fetchSubscriptionStatus(validToken);
+        } else if (storedRefreshToken) {
+          // Try to refresh
+          const newToken = await refreshAuthToken();
+          if (newToken) {
+            await fetchSubscriptionStatus(newToken);
+          } else {
+            // Can't refresh, need to login again
+            await clearAuthData();
+          }
+        } else {
+          // No refresh token, clear auth
+          await clearAuthData();
+        }
       }
     } catch (error) {
       console.error('Error loading stored auth:', error);
@@ -99,8 +159,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const fetchSubscriptionStatus = async (token: string) => {
+  const clearAuthData = async () => {
+    await Promise.all([
+      AsyncStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN),
+      AsyncStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN),
+      AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA),
+      AsyncStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY),
+    ]);
+    setUser(null);
+    setAuthToken(null);
+    setSubscription(null);
+  };
+
+  const fetchSubscriptionStatus = async (token: string, isRetry: boolean = false) => {
     try {
+      console.log('🔍 Fetching subscription status...');
       const response = await fetch(SUBSCRIPTION_ENDPOINTS.status, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -108,10 +181,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       const data = await response.json();
+      console.log('📦 Subscription status response:', data);
+      
+      // Handle unauthorized - try to refresh token
+      if (response.status === 401 && !isRetry) {
+        console.log('🔄 Got 401, attempting token refresh...');
+        const newToken = await refreshAuthToken();
+        if (newToken) {
+          return await fetchSubscriptionStatus(newToken, true);
+        } else {
+          // Can't refresh, clear auth
+          await clearAuthData();
+          return;
+        }
+      }
       
       if (data.success) {
+        console.log('✅ Subscription active:', data.data.isActive);
         setSubscription(data.data);
       } else {
+        console.log('❌ Subscription not found or error');
         setSubscription({
           isActive: false,
           status: 'none',
@@ -136,13 +225,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const login = async (token: string, userData: User) => {
+  const login = async (token: string, refreshToken: string, userData: User) => {
     try {
-      // Set token expiry to 30 days from now
+      // Set token expiry to ~55 minutes from now (idToken expires in 1 hour)
       const expiryTime = Date.now() + TOKEN_VALIDITY_DURATION;
       
       await Promise.all([
         AsyncStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token),
+        AsyncStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken),
         AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(userData)),
         AsyncStorage.setItem(STORAGE_KEYS.TOKEN_EXPIRY, expiryTime.toString()),
       ]);
@@ -160,15 +250,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      await Promise.all([
-        AsyncStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN),
-        AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA),
-        AsyncStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY),
-      ]);
-      
-      setUser(null);
-      setAuthToken(null);
-      setSubscription(null);
+      await clearAuthData();
     } catch (error) {
       console.error('Error logging out:', error);
     }

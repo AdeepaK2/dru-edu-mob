@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/src/contexts/AuthContext';
+import { useStudent } from '@/src/contexts/StudentContext';
 import Paywall from '@/components/Paywall';
 
 interface ClassItem {
@@ -23,6 +24,7 @@ interface ClassItem {
 
 export default function ClassesScreen() {
   const { hasActiveSubscription, isLoading } = useAuth();
+  const { selectedStudent } = useStudent();
   const [refreshing, setRefreshing] = React.useState(false);
 
   // Mock data - replace with actual API call
@@ -81,9 +83,14 @@ export default function ClassesScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Classes</Text>
+        <View>
+          <Text style={styles.headerTitle}>Classes</Text>
+          {selectedStudent && (
+            <Text style={styles.studentIndicator}>{selectedStudent.studentName}</Text>
+          )}
+        </View>
         <TouchableOpacity style={styles.filterBtn}>
           <Ionicons name="filter-outline" size={24} color="#1F2937" />
         </TouchableOpacity>
@@ -164,6 +171,11 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '700',
     color: '#1F2937',
+  },
+  studentIndicator: {
+    fontSize: 14,
+    color: '#6366F1',
+    marginTop: 2,
   },
   filterBtn: {
     padding: 8,
