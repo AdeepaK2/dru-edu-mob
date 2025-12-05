@@ -11,11 +11,9 @@ import {
   limit,
   onSnapshot,
   Timestamp,
-  arrayUnion,
   increment,
-  writeBatch
 } from 'firebase/firestore';
-import { firestore } from './firebase';
+import { firestore } from '../utils/firebase';
 
 const CONVERSATIONS_COLLECTION = 'chatConversations';
 const MESSAGES_COLLECTION = 'chatMessages';
@@ -25,7 +23,7 @@ export interface ChatParticipant {
   id: string;
   name: string;
   email?: string;
-  role: 'parent' | 'teacher' | 'admin' | 'student';
+  type: 'parent' | 'teacher' | 'admin' | 'student';
   avatar?: string;
 }
 
@@ -33,9 +31,10 @@ export interface ChatConversation {
   id: string;
   participants: string[];
   participantDetails: ChatParticipant[];
-  lastMessage?: string;
-  lastMessageAt?: Date;
-  lastMessageBy?: string;
+  lastMessage?: {
+    text: string;
+    timestamp: Date;
+  };
   unreadCount: Record<string, number>;
   createdAt: Date;
   updatedAt: Date;
@@ -46,13 +45,11 @@ export interface ChatMessage {
   conversationId: string;
   senderId: string;
   senderName: string;
-  senderRole: 'parent' | 'teacher' | 'admin' | 'student';
-  message: string;
-  messageType: 'text' | 'image' | 'file';
-  attachmentUrl?: string;
-  attachmentName?: string;
+  senderType: 'parent' | 'teacher' | 'admin' | 'student';
+  text: string;
+  timestamp: any; // Firestore Timestamp or Date
+  read: boolean;
   readBy: string[];
-  createdAt: Date;
 }
 
 // Helper to convert Timestamp to Date
@@ -63,9 +60,39 @@ const toDate = (timestamp: Timestamp | undefined): Date | undefined => {
 export class ChatService {
   
   /**
-   * Get or create a conversation between two users
+   * Get or create a conversation between two users (convenience method)
    */
   static async getOrCreateConversation(
+    user1Id: string,
+    user1Email: string,
+    user1Name: string,
+    user1Type: 'parent' | 'teacher' | 'admin' | 'student',
+    user2Id: string,
+    user2Email: string,
+    user2Name: string,
+    user2Type: 'parent' | 'teacher' | 'admin' | 'student'
+  ): Promise<string> {
+    const participant1: ChatParticipant = {
+      id: user1Id,
+      email: user1Email,
+      name: user1Name,
+      type: user1Type,
+    };
+    const participant2: ChatParticipant = {
+      id: user2Id,
+      email: user2Email,
+      name: user2Name,
+      type: user2Type,
+    };
+    
+    const conversation = await this.getOrCreateConversationWithParticipants(participant1, participant2);
+    return conversation.id;
+  }
+  
+  /**
+   * Get or create a conversation between two users (with participant objects)
+   */
+  static async getOrCreateConversationWithParticipants(
     participant1: ChatParticipant,
     participant2: ChatParticipant
   ): Promise<ChatConversation> {
@@ -87,9 +114,10 @@ export class ChatService {
         id: docSnap.id,
         participants: data.participants,
         participantDetails: data.participantDetails,
-        lastMessage: data.lastMessage,
-        lastMessageAt: toDate(data.lastMessageAt),
-        lastMessageBy: data.lastMessageBy,
+        lastMessage: data.lastMessage ? {
+          text: data.lastMessage,
+          timestamp: toDate(data.lastMessageAt) || new Date(),
+        } : undefined,
         unreadCount: data.unreadCount || {},
         createdAt: toDate(data.createdAt) || new Date(),
         updatedAt: toDate(data.updatedAt) || new Date(),
@@ -113,7 +141,9 @@ export class ChatService {
     
     return {
       id: docRef.id,
-      ...newConversation,
+      participants: newConversation.participants,
+      participantDetails: newConversation.participantDetails,
+      unreadCount: newConversation.unreadCount,
       createdAt: now.toDate(),
       updatedAt: now.toDate(),
     };
@@ -137,18 +167,17 @@ export class ChatService {
     return onSnapshot(q, (snapshot) => {
       const messages: ChatMessage[] = snapshot.docs.map(docSnap => {
         const data = docSnap.data();
+        const readBy = data.readBy || [];
         return {
           id: docSnap.id,
           conversationId: data.conversationId,
           senderId: data.senderId,
           senderName: data.senderName,
-          senderRole: data.senderRole,
-          message: data.message,
-          messageType: data.messageType || 'text',
-          attachmentUrl: data.attachmentUrl,
-          attachmentName: data.attachmentName,
-          readBy: data.readBy || [],
-          createdAt: toDate(data.createdAt) || new Date(),
+          senderType: data.senderRole || data.senderType, // Support both field names
+          text: data.message || data.text, // Support both field names
+          timestamp: data.createdAt, // Keep as Firestore Timestamp for formatting
+          read: readBy.length > 1, // Read if more than just sender
+          readBy: readBy,
         };
       }).reverse();
       callback(messages);
@@ -158,14 +187,28 @@ export class ChatService {
   }
   
   /**
-   * Send a message
+   * Send a message (convenience method)
    */
   static async sendMessage(
     conversationId: string,
     senderId: string,
+    senderEmail: string,
     senderName: string,
-    senderRole: 'parent' | 'teacher' | 'admin' | 'student',
-    message: string
+    senderType: 'parent' | 'teacher' | 'admin' | 'student',
+    text: string
+  ): Promise<ChatMessage> {
+    return this.sendMessageInternal(conversationId, senderId, senderName, senderType, text);
+  }
+  
+  /**
+   * Send a message (internal implementation)
+   */
+  static async sendMessageInternal(
+    conversationId: string,
+    senderId: string,
+    senderName: string,
+    senderType: 'parent' | 'teacher' | 'admin' | 'student',
+    text: string
   ): Promise<ChatMessage> {
     const messagesRef = collection(firestore, MESSAGES_COLLECTION);
     const now = Timestamp.now();
@@ -174,8 +217,8 @@ export class ChatService {
       conversationId,
       senderId,
       senderName,
-      senderRole,
-      message,
+      senderRole: senderType, // Use senderRole for consistency with Firestore schema
+      message: text, // Use message field for consistency
       messageType: 'text',
       readBy: [senderId],
       createdAt: now,
@@ -193,7 +236,7 @@ export class ChatService {
       
       // Prepare updates
       const updates: any = {
-        lastMessage: message.length > 100 ? message.substring(0, 100) + '...' : message,
+        lastMessage: text.length > 100 ? text.substring(0, 100) + '...' : text,
         lastMessageAt: now,
         lastMessageBy: senderId,
         updatedAt: now,
@@ -211,10 +254,14 @@ export class ChatService {
     
     return {
       id: docRef.id,
-      ...newMessage,
-      messageType: 'text',
+      conversationId,
+      senderId,
+      senderName,
+      senderType,
+      text,
+      timestamp: now,
+      read: false,
       readBy: [senderId],
-      createdAt: now.toDate(),
     };
   }
   
@@ -250,9 +297,10 @@ export class ChatService {
           id: docSnap.id,
           participants: data.participants,
           participantDetails: data.participantDetails,
-          lastMessage: data.lastMessage,
-          lastMessageAt: toDate(data.lastMessageAt),
-          lastMessageBy: data.lastMessageBy,
+          lastMessage: data.lastMessage ? {
+            text: data.lastMessage,
+            timestamp: toDate(data.lastMessageAt) || new Date(),
+          } : undefined,
           unreadCount: data.unreadCount || {},
           createdAt: toDate(data.createdAt) || new Date(),
           updatedAt: toDate(data.updatedAt) || new Date(),
@@ -264,3 +312,6 @@ export class ChatService {
     });
   }
 }
+
+// Export convenience instance
+export const chatService = ChatService;
