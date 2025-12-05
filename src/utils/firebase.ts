@@ -1,7 +1,8 @@
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getFirestore, Firestore, initializeFirestore } from 'firebase/firestore';
-import { getAuth, Auth } from 'firebase/auth';
+import { initializeAuth, getReactNativePersistence, Auth } from 'firebase/auth';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Firebase configuration - using same project as dru-edu
 const firebaseConfig = {
@@ -44,7 +45,9 @@ try {
   console.log('Firebase: Using existing Firestore instance for database:', FIRESTORE_DATABASE_ID);
 }
 
-auth = getAuth(app);
+auth = initializeAuth(app, {
+  persistence: getReactNativePersistence(AsyncStorage)
+});
 storage = getStorage(app);
 
 export { app, firestore, auth, storage };

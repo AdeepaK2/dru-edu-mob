@@ -13,10 +13,12 @@ import {
   Timestamp,
   increment,
 } from 'firebase/firestore';
-import { firestore } from '../utils/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { firestore, storage } from '../utils/firebase';
 
 const CONVERSATIONS_COLLECTION = 'chatConversations';
 const MESSAGES_COLLECTION = 'chatMessages';
+const CHAT_IMAGES_PATH = 'chat-images';
 
 // Types
 export interface ChatParticipant {
@@ -385,6 +387,68 @@ export class ChatService {
     }, (error) => {
       console.error('Error subscribing to conversations:', error);
     });
+  }
+  
+  /**
+   * Upload an image to Firebase Storage and return the download URL
+   */
+  static async uploadImage(
+    conversationId: string,
+    imageUri: string,
+    fileName?: string
+  ): Promise<ChatAttachment> {
+    const timestamp = Date.now();
+    const finalFileName = fileName || `image_${timestamp}.jpg`;
+    const storagePath = `${CHAT_IMAGES_PATH}/${conversationId}/${timestamp}_${finalFileName}`;
+    
+    console.log('ChatService: Uploading image to:', storagePath);
+    
+    // Fetch the image as a blob
+    const response = await fetch(imageUri);
+    const blob = await response.blob();
+    
+    // Upload to Firebase Storage
+    const storageRef = ref(storage, storagePath);
+    await uploadBytes(storageRef, blob);
+    
+    // Get the download URL
+    const downloadUrl = await getDownloadURL(storageRef);
+    
+    console.log('ChatService: Image uploaded successfully:', downloadUrl);
+    
+    return {
+      type: 'image',
+      url: downloadUrl,
+      fileName: finalFileName,
+      fileSize: blob.size,
+    };
+  }
+  
+  /**
+   * Send a message with an image attachment
+   */
+  static async sendImageMessage(
+    conversationId: string,
+    senderId: string,
+    senderEmail: string,
+    senderName: string,
+    senderType: 'parent' | 'teacher' | 'admin' | 'student',
+    imageUri: string,
+    caption?: string
+  ): Promise<ChatMessage> {
+    // Upload the image first
+    const attachment = await this.uploadImage(conversationId, imageUri);
+    
+    // Send message with attachment
+    return this.sendMessage(
+      conversationId,
+      senderId,
+      senderEmail,
+      senderName,
+      senderType,
+      caption || '',
+      [attachment]
+    );
   }
 }
 

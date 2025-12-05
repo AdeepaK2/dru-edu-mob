@@ -11,14 +11,20 @@ import {
   ActivityIndicator,
   Alert,
   Keyboard,
+  Image,
+  Modal,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '@/src/contexts/AuthContext';
-import { chatService, ChatMessage } from '../../src/services/chatService';
+import { chatService, ChatMessage, ChatAttachment } from '../../src/services/chatService';
 import { auth as firebaseAuth } from '@/src/utils/firebase';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface ParentData {
   id: string;
@@ -49,6 +55,9 @@ export default function ChatScreen() {
   const [parentData, setParentData] = useState<ParentData | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   
   const flatListRef = useRef<FlatList>(null);
 
@@ -174,6 +183,101 @@ export default function ChatScreen() {
     };
   }, [parentData, type, teacherId, teacherEmail, adminEmail, name]);
 
+  // Pick image from gallery
+  const pickImage = useCallback(async () => {
+    try {
+      // Request permission
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Please allow access to your photo library to send images.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        quality: 0.8,
+        allowsMultipleSelection: false,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setSelectedImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', 'Failed to pick image. Please try again.');
+    }
+  }, []);
+
+  // Take photo with camera
+  const takePhoto = useCallback(async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Please allow access to your camera to take photos.');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setSelectedImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Error taking photo:', error);
+      Alert.alert('Error', 'Failed to take photo. Please try again.');
+    }
+  }, []);
+
+  // Show image options
+  const showImageOptions = useCallback(() => {
+    Alert.alert(
+      'Send Image',
+      'Choose an option',
+      [
+        { text: 'Camera', onPress: takePhoto },
+        { text: 'Photo Library', onPress: pickImage },
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    );
+  }, [pickImage, takePhoto]);
+
+  // Send image
+  const handleSendImage = useCallback(async () => {
+    if (!selectedImage || !conversationId || !parentData || uploadingImage) return;
+
+    setUploadingImage(true);
+    Keyboard.dismiss();
+
+    try {
+      await chatService.sendImageMessage(
+        conversationId,
+        parentData.id,
+        parentData.email,
+        parentData.name || 'Parent',
+        'parent',
+        selectedImage,
+        newMessage.trim() || undefined // Optional caption
+      );
+      
+      setSelectedImage(null);
+      setNewMessage('');
+      
+      // Scroll to bottom after sending
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    } catch (error) {
+      console.error('Error sending image:', error);
+      Alert.alert('Error', 'Failed to send image. Please try again.');
+    } finally {
+      setUploadingImage(false);
+    }
+  }, [selectedImage, conversationId, parentData, uploadingImage, newMessage]);
+
   // Send message
   const handleSend = useCallback(async () => {
     if (!newMessage.trim() || !conversationId || !parentData || sending) return;
@@ -248,10 +352,23 @@ export default function ChatScreen() {
           </View>
         )}
         <View style={[styles.messageContainer, isMe ? styles.myMessage : styles.theirMessage]}>
-          <View style={[styles.messageBubble, isMe ? styles.myBubble : styles.theirBubble]}>
-            <Text style={[styles.messageText, isMe ? styles.myMessageText : styles.theirMessageText]}>
-              {item.text}
-            </Text>
+          <View style={[styles.messageBubble, isMe ? styles.myBubble : styles.theirBubble, item.messageType === 'image' && styles.imageBubble]}>
+            {/* Image attachment */}
+            {item.messageType === 'image' && item.attachments && item.attachments.length > 0 && (
+              <TouchableOpacity onPress={() => setPreviewImage(item.attachments![0].url)}>
+                <Image 
+                  source={{ uri: item.attachments[0].url }} 
+                  style={styles.messageImage}
+                  resizeMode="cover"
+                />
+              </TouchableOpacity>
+            )}
+            {/* Text message or caption */}
+            {item.text ? (
+              <Text style={[styles.messageText, isMe ? styles.myMessageText : styles.theirMessageText, item.messageType === 'image' && styles.imageCaption]}>
+                {item.text}
+              </Text>
+            ) : null}
             <View style={styles.messageFooter}>
               <Text style={[styles.messageTime, isMe ? styles.myMessageTime : styles.theirMessageTime]}>
                 {formatTime(item.timestamp)}
@@ -382,29 +499,51 @@ export default function ChatScreen() {
           />
         )}
 
+        {/* Selected Image Preview */}
+        {selectedImage && (
+          <View style={styles.imagePreviewContainer}>
+            <Image source={{ uri: selectedImage }} style={styles.imagePreview} />
+            <TouchableOpacity 
+              style={styles.removeImageButton}
+              onPress={() => setSelectedImage(null)}
+            >
+              <Ionicons name="close-circle" size={24} color="#EF4444" />
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Input Area */}
         <View style={[styles.inputContainer, { paddingBottom: insets.bottom || 8 }]}>
+          {/* Image picker button */}
+          <TouchableOpacity 
+            style={styles.attachButton}
+            onPress={showImageOptions}
+            disabled={sending || uploadingImage}
+          >
+            <Ionicons name="image-outline" size={24} color="#6366F1" />
+          </TouchableOpacity>
+          
           <View style={styles.inputWrapper}>
             <TextInput
               style={styles.input}
-              placeholder="Type a message..."
+              placeholder={selectedImage ? "Add a caption..." : "Type a message..."}
               placeholderTextColor="#9CA3AF"
               value={newMessage}
               onChangeText={setNewMessage}
               multiline
               maxLength={1000}
-              editable={!sending}
+              editable={!sending && !uploadingImage}
             />
           </View>
           <TouchableOpacity 
             style={[
               styles.sendButton, 
-              (!newMessage.trim() || sending) && styles.sendButtonDisabled
+              ((!newMessage.trim() && !selectedImage) || sending || uploadingImage) && styles.sendButtonDisabled
             ]}
-            onPress={handleSend}
-            disabled={!newMessage.trim() || sending}
+            onPress={selectedImage ? handleSendImage : handleSend}
+            disabled={(!newMessage.trim() && !selectedImage) || sending || uploadingImage}
           >
-            {sending ? (
+            {sending || uploadingImage ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
               <Ionicons name="send" size={20} color="#FFFFFF" />
@@ -412,6 +551,30 @@ export default function ChatScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Image Preview Modal */}
+      <Modal
+        visible={!!previewImage}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setPreviewImage(null)}
+      >
+        <View style={styles.modalContainer}>
+          <TouchableOpacity 
+            style={styles.modalCloseButton}
+            onPress={() => setPreviewImage(null)}
+          >
+            <Ionicons name="close" size={32} color="#FFFFFF" />
+          </TouchableOpacity>
+          {previewImage && (
+            <Image 
+              source={{ uri: previewImage }} 
+              style={styles.modalImage}
+              resizeMode="contain"
+            />
+          )}
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -619,6 +782,13 @@ const styles = StyleSheet.create({
     borderTopWidth: 0.5,
     borderTopColor: '#E5E7EB',
   },
+  attachButton: {
+    width: 42,
+    height: 42,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 4,
+  },
   inputWrapper: {
     flex: 1,
     backgroundColor: '#F3F4F6',
@@ -648,5 +818,58 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     backgroundColor: '#C7D2FE',
+  },
+  // Image preview styles
+  imagePreviewContainer: {
+    padding: 12,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 0.5,
+    borderTopColor: '#E5E7EB',
+    position: 'relative',
+  },
+  imagePreview: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 4,
+    left: 104,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+  },
+  // Message image styles
+  imageBubble: {
+    padding: 4,
+    maxWidth: SCREEN_WIDTH * 0.65,
+  },
+  messageImage: {
+    width: SCREEN_WIDTH * 0.55,
+    height: SCREEN_WIDTH * 0.55,
+    borderRadius: 8,
+    marginBottom: 4,
+  },
+  imageCaption: {
+    marginTop: 4,
+    paddingHorizontal: 8,
+  },
+  // Modal styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    zIndex: 10,
+    padding: 8,
+  },
+  modalImage: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_WIDTH,
   },
 });
