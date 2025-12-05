@@ -1,3 +1,6 @@
+// Polyfill for Firebase - must be first import
+import '@azure/core-asynciterator-polyfill';
+
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
