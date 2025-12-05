@@ -12,7 +12,7 @@ import {
   Alert,
   Keyboard,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -39,6 +39,7 @@ export default function ChatScreen() {
 
   const { name, type, avatar, subjects, teacherId, teacherEmail, adminEmail } = params;
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -321,8 +322,8 @@ export default function ChatScreen() {
       {/* Messages */}
       <KeyboardAvoidingView 
         style={styles.chatContainer}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={0}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 64 : 0}
       >
         {loading ? (
           <View style={styles.loadingContainer}>
@@ -346,11 +347,13 @@ export default function ChatScreen() {
               }
             }}
             showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
           />
         )}
 
         {/* Input Area */}
-        <View style={styles.inputContainer}>
+        <View style={[styles.inputContainer, { paddingBottom: insets.bottom || 8 }]}>
           <View style={styles.inputWrapper}>
             <TextInput
               style={styles.input}
@@ -547,33 +550,38 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 8,
+    paddingTop: 8,
     backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
+    borderTopWidth: 0.5,
     borderTopColor: '#E5E7EB',
   },
   inputWrapper: {
     flex: 1,
     backgroundColor: '#F3F4F6',
-    borderRadius: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginRight: 12,
+    borderRadius: 21,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginRight: 8,
+    minHeight: 42,
     maxHeight: 100,
+    justifyContent: 'center',
   },
   input: {
-    fontSize: 15,
+    fontSize: 16,
     color: '#1F2937',
     maxHeight: 80,
+    paddingTop: 0,
+    paddingBottom: 0,
   },
   sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     backgroundColor: '#6366F1',
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 0,
   },
   sendButtonDisabled: {
     backgroundColor: '#C7D2FE',
