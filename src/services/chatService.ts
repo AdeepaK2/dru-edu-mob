@@ -181,8 +181,14 @@ export class ChatService {
         };
       }).reverse();
       callback(messages);
-    }, (error) => {
+    }, (error: any) => {
       console.error('Error subscribing to messages:', error);
+      // Check if it's an index error and log the link
+      if (error?.message?.includes('index')) {
+        console.error('Firestore index required. Create index at Firebase Console or use this link if available in error.');
+      }
+      // Return empty array on error so UI doesn't stay loading forever
+      callback([]);
     });
   }
   
