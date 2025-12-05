@@ -97,6 +97,7 @@ export class ChatService {
     participant2: ChatParticipant
   ): Promise<ChatConversation> {
     const participantIds = [participant1.id, participant2.id].sort();
+    console.log('ChatService: Looking for conversation with participants:', participantIds);
     
     // Check if conversation exists
     const conversationsRef = collection(firestore, CONVERSATIONS_COLLECTION);
@@ -106,10 +107,12 @@ export class ChatService {
     );
     
     const snapshot = await getDocs(q);
+    console.log('ChatService: Found existing conversations:', snapshot.docs.length);
     
     if (!snapshot.empty) {
       const docSnap = snapshot.docs[0];
       const data = docSnap.data();
+      console.log('ChatService: Using existing conversation:', docSnap.id);
       return {
         id: docSnap.id,
         participants: data.participants,
@@ -125,6 +128,7 @@ export class ChatService {
     }
     
     // Create new conversation
+    console.log('ChatService: Creating new conversation...');
     const now = Timestamp.now();
     const newConversation = {
       participants: participantIds,
@@ -138,6 +142,7 @@ export class ChatService {
     };
     
     const docRef = await addDoc(conversationsRef, newConversation);
+    console.log('ChatService: Created new conversation:', docRef.id);
     
     return {
       id: docRef.id,
@@ -156,6 +161,7 @@ export class ChatService {
     conversationId: string,
     callback: (messages: ChatMessage[]) => void
   ): () => void {
+    console.log('ChatService: Subscribing to messages for conversation:', conversationId);
     const messagesRef = collection(firestore, MESSAGES_COLLECTION);
     const q = query(
       messagesRef,
@@ -165,6 +171,7 @@ export class ChatService {
     );
     
     return onSnapshot(q, (snapshot) => {
+      console.log('ChatService: Snapshot received, docs count:', snapshot.docs.length);
       const messages: ChatMessage[] = snapshot.docs.map(docSnap => {
         const data = docSnap.data();
         const readBy = data.readBy || [];
@@ -180,9 +187,12 @@ export class ChatService {
           readBy: readBy,
         };
       }).reverse();
+      console.log('ChatService: Calling callback with', messages.length, 'messages');
       callback(messages);
     }, (error: any) => {
-      console.error('Error subscribing to messages:', error);
+      console.error('ChatService: Error subscribing to messages:', error);
+      console.error('ChatService: Error code:', error?.code);
+      console.error('ChatService: Error message:', error?.message);
       // Check if it's an index error and log the link
       if (error?.message?.includes('index')) {
         console.error('Firestore index required. Create index at Firebase Console or use this link if available in error.');

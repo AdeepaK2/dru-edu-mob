@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { signInWithCustomToken, signOut as firebaseSignOut, onAuthStateChanged } from 'firebase/auth';
+import { auth as firebaseAuth } from '../utils/firebase';
 import { SUBSCRIPTION_ENDPOINTS, AUTH_ENDPOINTS } from '../config/api';
 
 interface User {
@@ -33,7 +35,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   hasActiveSubscription: boolean;
-  login: (token: string, refreshToken: string, userData: User) => Promise<void>;
+  login: (token: string, refreshToken: string, userData: User, customToken?: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshSubscription: () => Promise<void>;
   setSubscription: (sub: Subscription) => void;
@@ -56,6 +58,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [firebaseAuthenticated, setFirebaseAuthenticated] = useState(false);
+
+  // Listen to Firebase auth state
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(firebaseAuth, (firebaseUser) => {
+      console.log('Firebase auth state changed:', firebaseUser ? 'signed in' : 'signed out');
+      setFirebaseAuthenticated(!!firebaseUser);
+    });
+    return () => unsubscribe();
+  }, []);
 
   // Load stored auth data on mount
   useEffect(() => {
@@ -225,8 +237,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const login = async (token: string, refreshToken: string, userData: User) => {
+  const login = async (token: string, refreshToken: string, userData: User, customToken?: string) => {
     try {
+      // Sign into Firebase Auth if custom token provided
+      if (customToken) {
+        try {
+          console.log('Signing into Firebase Auth...');
+          await signInWithCustomToken(firebaseAuth, customToken);
+          console.log('Firebase Auth sign-in successful');
+        } catch (firebaseError) {
+          console.error('Firebase Auth sign-in failed:', firebaseError);
+          // Continue anyway - chat may not work but rest of app should
+        }
+      }
+      
       // Set token expiry to ~55 minutes from now (idToken expires in 1 hour)
       const expiryTime = Date.now() + TOKEN_VALIDITY_DURATION;
       
@@ -250,6 +274,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
+      // Sign out from Firebase Auth
+      try {
+        await firebaseSignOut(firebaseAuth);
+      } catch (e) {
+        console.error('Firebase sign out error:', e);
+      }
       await clearAuthData();
     } catch (error) {
       console.error('Error logging out:', error);

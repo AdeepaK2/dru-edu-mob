@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from '@/src/contexts/AuthContext';
 import { chatService, ChatMessage } from '../../src/services/chatService';
 
 interface ParentData {
@@ -37,6 +38,7 @@ export default function ChatScreen() {
   }>();
 
   const { name, type, avatar, subjects, teacherId, teacherEmail, adminEmail } = params;
+  const { user } = useAuth();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -47,29 +49,52 @@ export default function ChatScreen() {
   
   const flatListRef = useRef<FlatList>(null);
 
-  // Load parent data from storage
+  // Load parent data from AuthContext or storage
   useEffect(() => {
     const loadParentData = async () => {
       try {
-        const userData = await AsyncStorage.getItem('userData');
+        // First try from AuthContext user
+        if (user) {
+          console.log('Chat: Got user from AuthContext:', user);
+          // Use email as parent ID to match web app (teacher uses parent email as ID)
+          setParentData({
+            id: user.email, // Use email as ID to match teacher chat
+            email: user.email,
+            name: user.name,
+          });
+          return;
+        }
+        
+        // Fallback to AsyncStorage with correct key
+        const userData = await AsyncStorage.getItem('@dru_user_data');
+        console.log('Chat: userData from storage:', userData);
         if (userData) {
           const parsed = JSON.parse(userData);
+          console.log('Chat: Parsed user data:', parsed);
+          // Use email as parent ID to match web app
           setParentData({
-            id: parsed.id || parsed.parentId,
+            id: parsed.email, // Use email as ID to match teacher chat
             email: parsed.email,
-            name: parsed.name || parsed.fullName,
+            name: parsed.name || parsed.fullName || parsed.displayName,
           });
+        } else {
+          console.log('Chat: No user data found in storage');
         }
       } catch (error) {
         console.error('Error loading parent data:', error);
       }
     };
     loadParentData();
-  }, []);
+  }, [user]);
 
   // Initialize conversation and subscribe to messages
   useEffect(() => {
-    if (!parentData) return;
+    if (!parentData) {
+      console.log('Chat: No parent data yet, waiting...');
+      return;
+    }
+
+    console.log('Chat: Initializing with parent data:', parentData);
 
     let unsubscribe: (() => void) | null = null;
 
@@ -81,6 +106,14 @@ export default function ChatScreen() {
         const recipientId = type === 'admin' ? 'system-admin' : (teacherId || '');
         const recipientEmail = type === 'admin' ? (adminEmail || 'dru.coordinator@gmail.com') : (teacherEmail || '');
         const recipientType = type === 'admin' ? 'admin' : 'teacher';
+        
+        console.log('Chat: Getting/creating conversation with:', {
+          parentId: parentData.id,
+          parentEmail: parentData.email,
+          recipientId,
+          recipientEmail,
+          recipientType,
+        });
         
         // Get or create conversation
         const convId = await chatService.getOrCreateConversation(
@@ -94,15 +127,20 @@ export default function ChatScreen() {
           recipientType as 'teacher' | 'admin'
         );
         
+        console.log('Chat: Got conversation ID:', convId);
         setConversationId(convId);
         
         // Subscribe to messages
+        console.log('Chat: Subscribing to messages...');
         unsubscribe = chatService.subscribeToMessages(convId, (msgs) => {
+          console.log('Chat: Received messages:', msgs.length);
           setMessages(msgs);
           setLoading(false);
           
           // Mark messages as read
-          chatService.markAsRead(convId, parentData.id);
+          if (msgs.length > 0) {
+            chatService.markAsRead(convId, parentData.id);
+          }
         });
         
       } catch (error) {

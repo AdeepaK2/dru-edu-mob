@@ -54,9 +54,10 @@ export default function LoginScreen() {
         // Use idToken for API calls (not customToken)
         const token = data.data.idToken || data.data.customToken;
         const refreshToken = data.data.refreshToken || '';
+        const customToken = data.data.customToken; // For Firebase Auth
         
-        // Save to auth context (this will also check subscription)
-        await login(token, refreshToken, userData);
+        // Save to auth context (this will also check subscription and sign into Firebase)
+        await login(token, refreshToken, userData, customToken);
         
         // Navigate to dashboard
         router.replace('/(tabs)');
