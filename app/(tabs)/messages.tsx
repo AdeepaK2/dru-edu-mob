@@ -100,13 +100,13 @@ export default function MessagesScreen() {
 
   const handleTeacherPress = (teacher: Teacher) => {
     router.push(
-      `/chat/${teacher.id}?name=${encodeURIComponent(teacher.name)}&type=teacher&avatar=${encodeURIComponent(teacher.avatar)}&subjects=${encodeURIComponent(teacher.subjects.join(', '))}` as any
+      `/chat/${teacher.id}?name=${encodeURIComponent(teacher.name)}&type=teacher&avatar=${encodeURIComponent(teacher.avatar)}&subjects=${encodeURIComponent(teacher.subjects.join(', '))}&teacherId=${encodeURIComponent(teacher.id)}&teacherEmail=${encodeURIComponent(teacher.email)}` as any
     );
   };
 
   const handleAdminPress = (admin: SystemAdmin) => {
     router.push(
-      `/chat/${admin.id}?name=${encodeURIComponent(admin.name)}&type=admin&avatar=${encodeURIComponent(admin.avatar)}` as any
+      `/chat/${admin.id}?name=${encodeURIComponent(admin.name)}&type=admin&avatar=${encodeURIComponent(admin.avatar)}&adminEmail=${encodeURIComponent(admin.email)}` as any
     );
   };
 
