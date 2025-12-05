@@ -34,6 +34,8 @@ export const API_CONFIG = {
       testDetails: (studentId: string, testId: string) => `/student/${studentId}/tests/${testId}`,
       attendance: (studentId: string, classId: string) => `/student/${studentId}/classes/${classId}/attendance`,
       progress: (studentId: string) => `/student/${studentId}/progress`,
+      teachers: (studentId: string) => `/student/${studentId}/teachers`,
+      messages: (studentId: string) => `/student/${studentId}/messages`,
     },
   },
 };
@@ -77,6 +79,8 @@ export const getStudentEndpoints = (studentId: string) => ({
   testDetails: (testId: string) => getApiUrl(API_CONFIG.endpoints.student.testDetails(studentId, testId)),
   attendance: (classId: string) => getApiUrl(API_CONFIG.endpoints.student.attendance(studentId, classId)),
   progress: getApiUrl(API_CONFIG.endpoints.student.progress(studentId)),
+  teachers: getApiUrl(API_CONFIG.endpoints.student.teachers(studentId)),
+  messages: getApiUrl(API_CONFIG.endpoints.student.messages(studentId)),
 });
 
 export default API_CONFIG;
