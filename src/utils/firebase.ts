@@ -1,6 +1,7 @@
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getFirestore, Firestore, initializeFirestore } from 'firebase/firestore';
 import { getAuth, Auth } from 'firebase/auth';
+import { getStorage, FirebaseStorage } from 'firebase/storage';
 
 // Firebase configuration - using same project as dru-edu
 const firebaseConfig = {
@@ -24,6 +25,7 @@ if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
 let app: FirebaseApp;
 let firestore: Firestore;
 let auth: Auth;
+let storage: FirebaseStorage;
 
 if (!getApps().length) {
   app = initializeApp(firebaseConfig);
@@ -43,5 +45,6 @@ try {
 }
 
 auth = getAuth(app);
+storage = getStorage(app);
 
-export { app, firestore, auth };
+export { app, firestore, auth, storage };

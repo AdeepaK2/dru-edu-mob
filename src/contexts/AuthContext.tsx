@@ -48,6 +48,7 @@ const STORAGE_KEYS = {
   REFRESH_TOKEN: '@dru_refresh_token',
   USER_DATA: '@dru_user_data',
   TOKEN_EXPIRY: '@dru_token_expiry',
+  CUSTOM_TOKEN: '@dru_custom_token',
 };
 
 // idToken expires in 1 hour - we'll refresh a bit before
@@ -133,10 +134,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadStoredAuth = async () => {
     try {
-      const [storedToken, storedUser, storedRefreshToken] = await Promise.all([
+      const [storedToken, storedUser, storedRefreshToken, storedCustomToken] = await Promise.all([
         AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN),
         AsyncStorage.getItem(STORAGE_KEYS.USER_DATA),
         AsyncStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN),
+        AsyncStorage.getItem(STORAGE_KEYS.CUSTOM_TOKEN),
       ]);
 
       if (storedToken && storedUser) {
@@ -148,6 +150,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const validToken = await getValidToken();
         
         if (validToken) {
+          // Re-authenticate with Firebase if we have a custom token
+          if (storedCustomToken && !firebaseAuth.currentUser) {
+            try {
+              console.log('🔥 Re-authenticating with Firebase...');
+              await signInWithCustomToken(firebaseAuth, storedCustomToken);
+              console.log('✅ Firebase re-authentication successful');
+            } catch (firebaseError) {
+              console.warn('⚠️ Firebase re-auth failed, chat features may not work:', firebaseError);
+              // Don't logout - API auth is still valid, just chat won't work
+            }
+          }
+          
           // Fetch subscription status with valid token
           await fetchSubscriptionStatus(validToken);
         } else if (storedRefreshToken) {
@@ -177,6 +191,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       AsyncStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN),
       AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA),
       AsyncStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY),
+      AsyncStorage.removeItem(STORAGE_KEYS.CUSTOM_TOKEN),
     ]);
     setUser(null);
     setAuthToken(null);
@@ -245,6 +260,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log('Signing into Firebase Auth...');
           await signInWithCustomToken(firebaseAuth, customToken);
           console.log('Firebase Auth sign-in successful');
+          // Store custom token for re-authentication on app reload
+          await AsyncStorage.setItem(STORAGE_KEYS.CUSTOM_TOKEN, customToken);
         } catch (firebaseError) {
           console.error('Firebase Auth sign-in failed:', firebaseError);
           // Continue anyway - chat may not work but rest of app should

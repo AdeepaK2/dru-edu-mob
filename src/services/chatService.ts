@@ -40,6 +40,16 @@ export interface ChatConversation {
   updatedAt: Date;
 }
 
+export interface ChatAttachment {
+  type: 'image';
+  url: string;
+  thumbnailUrl?: string;
+  fileName?: string;
+  fileSize?: number;
+  width?: number;
+  height?: number;
+}
+
 export interface ChatMessage {
   id: string;
   conversationId: string;
@@ -47,6 +57,8 @@ export interface ChatMessage {
   senderName: string;
   senderType: 'parent' | 'teacher' | 'admin' | 'student';
   text: string;
+  messageType: 'text' | 'image';
+  attachments?: ChatAttachment[];
   timestamp: any; // Firestore Timestamp or Date
   read: boolean;
   readBy: string[];
@@ -217,7 +229,9 @@ export class ChatService {
           senderId: data.senderId,
           senderName: data.senderName,
           senderType: data.senderRole || data.senderType, // Support both field names
-          text: data.message || data.text, // Support both field names
+          text: data.message || data.text || '', // Support both field names
+          messageType: data.messageType || 'text',
+          attachments: data.attachments || [],
           timestamp: data.createdAt, // Keep as Firestore Timestamp for formatting
           read: readBy.length > 1, // Read if more than just sender
           readBy: readBy,
@@ -247,9 +261,10 @@ export class ChatService {
     senderEmail: string,
     senderName: string,
     senderType: 'parent' | 'teacher' | 'admin' | 'student',
-    text: string
+    text: string,
+    attachments?: ChatAttachment[]
   ): Promise<ChatMessage> {
-    return this.sendMessageInternal(conversationId, senderId, senderName, senderType, text);
+    return this.sendMessageInternal(conversationId, senderId, senderName, senderType, text, attachments);
   }
   
   /**
@@ -260,21 +275,29 @@ export class ChatService {
     senderId: string,
     senderName: string,
     senderType: 'parent' | 'teacher' | 'admin' | 'student',
-    text: string
+    text: string,
+    attachments?: ChatAttachment[]
   ): Promise<ChatMessage> {
     const messagesRef = collection(firestore, MESSAGES_COLLECTION);
     const now = Timestamp.now();
     
-    const newMessage = {
+    const messageType = attachments && attachments.length > 0 ? 'image' : 'text';
+    const lastMessageText = messageType === 'image' ? '📷 Image' : text;
+    
+    const newMessage: any = {
       conversationId,
       senderId,
       senderName,
       senderRole: senderType, // Use senderRole for consistency with Firestore schema
       message: text, // Use message field for consistency
-      messageType: 'text',
+      messageType,
       readBy: [senderId],
       createdAt: now,
     };
+    
+    if (attachments && attachments.length > 0) {
+      newMessage.attachments = attachments;
+    }
     
     const docRef = await addDoc(messagesRef, newMessage);
     
@@ -288,7 +311,7 @@ export class ChatService {
       
       // Prepare updates
       const updates: any = {
-        lastMessage: text.length > 100 ? text.substring(0, 100) + '...' : text,
+        lastMessage: lastMessageText.length > 100 ? lastMessageText.substring(0, 100) + '...' : lastMessageText,
         lastMessageAt: now,
         lastMessageBy: senderId,
         updatedAt: now,

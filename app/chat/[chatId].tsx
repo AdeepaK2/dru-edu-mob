@@ -18,6 +18,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { chatService, ChatMessage } from '../../src/services/chatService';
+import { auth as firebaseAuth } from '@/src/utils/firebase';
 
 interface ParentData {
   id: string;
@@ -38,7 +39,7 @@ export default function ChatScreen() {
   }>();
 
   const { name, type, avatar, subjects, teacherId, teacherEmail, adminEmail } = params;
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const insets = useSafeAreaInsets();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -47,6 +48,7 @@ export default function ChatScreen() {
   const [sending, setSending] = useState(false);
   const [parentData, setParentData] = useState<ParentData | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
   
   const flatListRef = useRef<FlatList>(null);
 
@@ -147,7 +149,19 @@ export default function ChatScreen() {
       } catch (error) {
         console.error('Error initializing chat:', error);
         setLoading(false);
-        Alert.alert('Error', 'Failed to load chat. Please try again.');
+        
+        // Check if it's a Firebase Auth error
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (errorMessage.includes('permission') || errorMessage.includes('Permission')) {
+          // Check if Firebase Auth is signed out
+          if (!firebaseAuth.currentUser) {
+            setAuthError('Session expired. Please log in again to use chat.');
+          } else {
+            setAuthError('Unable to access chat. Please try again later.');
+          }
+        } else {
+          Alert.alert('Error', 'Failed to load chat. Please try again.');
+        }
       }
     };
 
@@ -325,7 +339,23 @@ export default function ChatScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 64 : 0}
       >
-        {loading ? (
+        {authError ? (
+          <View style={styles.errorContainer}>
+            <Ionicons name="alert-circle-outline" size={64} color="#EF4444" />
+            <Text style={styles.errorTitle}>Session Expired</Text>
+            <Text style={styles.errorText}>{authError}</Text>
+            <TouchableOpacity 
+              style={styles.reloginButton}
+              onPress={async () => {
+                await logout();
+                router.replace('/(auth)/login');
+              }}
+            >
+              <Ionicons name="log-in-outline" size={20} color="#FFFFFF" />
+              <Text style={styles.reloginButtonText}>Log In Again</Text>
+            </TouchableOpacity>
+          </View>
+        ) : loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#6366F1" />
             <Text style={styles.loadingText}>Loading messages...</Text>
@@ -449,6 +479,39 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 14,
     color: '#6B7280',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  reloginButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#6366F1',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
+  },
+  reloginButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   messagesContent: {
     paddingHorizontal: 16,
