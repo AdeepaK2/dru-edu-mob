@@ -29,6 +29,39 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Generate Android Keystore
+        run: |
+          keytool -genkeypair -v \
+            -keystore release.keystore \
+            -alias dru-edu-mob \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass drueducation2024 \
+            -keypass drueducation2024 \
+            -dname "CN=Dr U Education, OU=Mobile, O=Dr U Education, L=Colombo, ST=Western, C=LK"
+
+      - name: Create credentials.json
+        run: |
+          cat > credentials.json << EOF
+          {
+            "android": {
+              "keystore": {
+                "keystorePath": "./release.keystore",
+                "keystorePassword": "drueducation2024",
+                "keyAlias": "dru-edu-mob",
+                "keyPassword": "drueducation2024"
+              }
+            }
+          }
+          EOF
+
       - name: Build Android APK
         run: eas build --platform android --profile production --non-interactive --local
         env:
