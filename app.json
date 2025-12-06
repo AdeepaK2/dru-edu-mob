@@ -56,9 +56,11 @@
       "reactCompiler": true
     },
     "extra": {
+      "router": {},
       "eas": {
-        "projectId": "your-project-id"
+        "projectId": "9dd8cec2-dafe-46ed-a41b-3f758fabf1e0"
       }
-    }
+    },
+    "owner": "adeepak"
   }
 }
