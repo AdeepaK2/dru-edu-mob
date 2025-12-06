@@ -52,7 +52,7 @@ export default function VerifyEmailScreen() {
 
       <View style={styles.footer}>
         <Image source={require('../../assets/images/Logo.png')} style={styles.logo} resizeMode="contain" />
-        <Text style={styles.footerText}>DRU EDU Parent Portal</Text>
+        <Text style={styles.footerText}>Dr U Education Parent Portal</Text>
       </View>
     </View>
   );

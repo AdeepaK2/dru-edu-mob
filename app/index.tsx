@@ -59,7 +59,7 @@ export default function SplashScreen() {
         <View style={styles.logoContainer}>
           <Image source={require('../assets/images/Logo.png')} style={styles.logo} resizeMode="contain" />
         </View>
-        <Text style={styles.title}>DRU EDU</Text>
+        <Text style={styles.title}>Dr U Education</Text>
         <Text style={styles.subtitle}>Parent Portal</Text>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#FFFFFF" />

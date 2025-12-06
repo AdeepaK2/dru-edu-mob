@@ -83,7 +83,7 @@ export default function HomeScreen() {
               resizeMode="contain"
             />
             <View style={styles.brandText}>
-              <Text style={styles.brandName}>DRU EDU</Text>
+              <Text style={styles.brandName}>Dr U Education</Text>
               <Text style={styles.brandTagline}>Parent Portal</Text>
             </View>
           </View>
