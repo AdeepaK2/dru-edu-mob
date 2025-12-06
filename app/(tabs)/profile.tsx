@@ -617,7 +617,7 @@ export default function ProfileScreen() {
           icon: 'help-circle-outline',
           label: 'Help & Support',
           showArrow: true,
-          onPress: () => openLink('mailto:support@druedu.com'),
+          onPress: () => router.push('/(tabs)/support'),
         },
         {
           id: 'privacy',
