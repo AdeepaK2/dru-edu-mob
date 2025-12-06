@@ -81,7 +81,7 @@ export default function LoginScreen() {
       
       <View style={styles.header}>
         <Image source={require('../../assets/images/Logo.png')} style={styles.logo} resizeMode="contain" />
-        <Text style={styles.headerTitle}>DRU EDU</Text>
+        <Text style={styles.headerTitle}>Dr U Education</Text>
         <Text style={styles.headerSubtitle}>Parent Portal</Text>
       </View>
 

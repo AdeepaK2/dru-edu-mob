@@ -28,7 +28,7 @@ const faqs: FAQItem[] = [
   },
   {
     question: 'How does the subscription work?',
-    answer: 'DRU Education offers a yearly subscription at $14.99 per student. This gives you access to detailed analytics, test results, and progress tracking for your linked students.',
+    answer: 'Dr U Education offers a yearly subscription at $14.99 per student. This gives you access to detailed analytics, test results, and progress tracking for your linked students.',
   },
   {
     question: 'Can I have multiple children on one account?',
@@ -57,7 +57,7 @@ export default function SupportScreen() {
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 
   const handleEmail = () => {
-    Linking.openURL('mailto:support@drueducation.com?subject=Help Request - DRU Education App').catch(() => {
+    Linking.openURL('mailto:support@drueducation.com?subject=Help Request - Dr U Education App').catch(() => {
       Alert.alert('Error', 'Could not open email client');
     });
   };
@@ -197,9 +197,9 @@ export default function SupportScreen() {
 
         {/* App Info */}
         <View style={styles.appInfoSection}>
-          <Text style={styles.appName}>DRU Education</Text>
+          <Text style={styles.appName}>Dr U Education</Text>
           <Text style={styles.appVersion}>Version 1.0.0</Text>
-          <Text style={styles.appCopyright}>© 2025 DRU Education. All rights reserved.</Text>
+          <Text style={styles.appCopyright}>© 2025 Dr U Education. All rights reserved.</Text>
         </View>
 
         <View style={{ height: 40 }} />

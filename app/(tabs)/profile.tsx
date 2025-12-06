@@ -25,6 +25,7 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import { useStudent } from '@/src/contexts/StudentContext';
 import Paywall from '@/components/Paywall';
 import { AUTH_ENDPOINTS } from '@/src/config/api';
+import { NotificationBell } from '@/components/NotificationBell';
 
 interface MenuItem {
   id: string;
@@ -158,9 +159,20 @@ export default function ProfileScreen() {
 
     setIsUploadingPhoto(true);
     try {
-      // Create a blob from the image URI
-      const response = await fetch(uri);
-      const blob = await response.blob();
+      // For React Native, we need to use XMLHttpRequest to create a proper blob
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.onload = function () {
+          resolve(xhr.response);
+        };
+        xhr.onerror = function (e) {
+          console.error('XHR error:', e);
+          reject(new TypeError('Network request failed'));
+        };
+        xhr.responseType = 'blob';
+        xhr.open('GET', uri, true);
+        xhr.send(null);
+      });
 
       // Create storage reference
       const fileName = `${user.uid}_${Date.now()}.jpg`;
@@ -168,6 +180,11 @@ export default function ProfileScreen() {
 
       // Upload the file
       await uploadBytes(storageRef, blob);
+
+      // Close the blob to free memory
+      if (typeof (blob as any).close === 'function') {
+        (blob as any).close();
+      }
 
       // Get the download URL
       const downloadURL = await getDownloadURL(storageRef);
@@ -193,9 +210,9 @@ export default function ProfileScreen() {
       } else {
         Alert.alert('Error', data.message || 'Failed to update profile picture');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading profile picture:', error);
-      Alert.alert('Error', 'Failed to upload profile picture. Please try again.');
+      Alert.alert('Error', error?.message || 'Failed to upload profile picture. Please try again.');
     } finally {
       setIsUploadingPhoto(false);
     }
@@ -603,9 +620,9 @@ export default function ProfileScreen() {
         {
           id: 'notifications',
           icon: 'notifications-outline',
-          label: 'Notifications',
+          label: 'Notification Settings',
           showArrow: true,
-          onPress: () => setNotificationsModalVisible(true),
+          onPress: () => router.push('/notification-settings'),
         },
       ],
     },
@@ -972,6 +989,7 @@ export default function ProfileScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Profile</Text>
+          <NotificationBell color="#1F2937" size={24} />
         </View>
 
         {/* Profile Card */}
@@ -1094,6 +1112,9 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 16,

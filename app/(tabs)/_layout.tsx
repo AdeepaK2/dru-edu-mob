@@ -79,9 +79,15 @@ export default function TabLayout() {
           ),
         }}
       />
-      {/* Hide explore tab */}
+      {/* Hide explore and support tabs */}
       <Tabs.Screen
         name="explore"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="support"
         options={{
           href: null,
         }}

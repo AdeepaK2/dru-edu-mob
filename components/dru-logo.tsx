@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import Svg, { Circle, Path, G } from 'react-native-svg';
+import Svg, { Circle, Path, G, Text as SvgText } from 'react-native-svg';
 
 interface LogoProps {
   size?: number;
@@ -24,23 +24,35 @@ export default function DruLogo({
         <G>
           {/* D shape */}
           <Path
-            d="M55 65 L55 135 L75 135 C95 135 105 120 105 100 C105 80 95 65 75 65 Z M65 75 L75 75 C88 75 95 85 95 100 C95 115 88 125 75 125 L65 125 Z"
+            d="M40 55 L40 125 L58 125 C76 125 85 112 85 90 C85 68 76 55 58 55 Z M50 65 L58 65 C70 65 75 75 75 90 C75 105 70 115 58 115 L50 115 Z"
             fill={color}
           />
           {/* r with dot */}
           <Path
-            d="M115 85 L115 135 L125 135 L125 105 C125 95 130 90 140 90 L140 80 C130 80 125 85 122 92 L122 85 Z"
+            d="M95 75 L95 125 L105 125 L105 95 C105 85 110 80 120 80 L120 70 C110 70 105 75 102 82 L102 75 Z"
             fill={color}
           />
           {/* Dot above r */}
-          <Circle cx="120" cy="70" r="6" fill={color} />
+          <Circle cx="100" cy="60" r="5" fill={color} />
         </G>
         
-        {/* U shape at bottom */}
+        {/* U shape - positioned better */}
         <Path
-          d="M85 140 L85 160 C85 175 95 185 115 185 C135 185 145 175 145 160 L145 140 L135 140 L135 158 C135 168 128 175 115 175 C102 175 95 168 95 158 L95 140 Z"
+          d="M130 55 L130 100 C130 118 118 130 100 130 C82 130 70 118 70 100 L70 55 L80 55 L80 98 C80 112 88 120 100 120 C112 120 120 112 120 98 L120 55 Z"
           fill={color}
         />
+        
+        {/* "Education" text at bottom */}
+        <SvgText
+          x="100"
+          y="165"
+          fontSize="18"
+          fontWeight="600"
+          fill={color}
+          textAnchor="middle"
+        >
+          Education
+        </SvgText>
       </Svg>
     </View>
   );
