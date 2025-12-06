@@ -9,16 +9,21 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  ScrollView,
+  Image,
 } from 'react-native';
 import { Link, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-
-const API_URL = 'http://localhost:3001/api/v1'; // Change to your API URL
+import { Ionicons } from '@expo/vector-icons';
+import { AUTH_ENDPOINTS } from '../../src/config/api';
+import { useAuth } from '../../src/contexts/AuthContext';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const { login } = useAuth();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -28,20 +33,33 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/auth/login`, {
+      const response = await fetch(AUTH_ENDPOINTS.login, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        // TODO: Store token and user data
-        // await AsyncStorage.setItem('token', data.data.customToken);
-        Alert.alert('Success', 'Login successful!');
+        // Extract user data and token
+        const userData = {
+          uid: data.data.parent.uid,
+          email: data.data.parent.email,
+          name: data.data.parent.name,
+          phone: data.data.parent.phone,
+          linkedStudents: data.data.parent.linkedStudents || [],
+        };
+        
+        // Use idToken for API calls (not customToken)
+        const token = data.data.idToken || data.data.customToken;
+        const refreshToken = data.data.refreshToken || '';
+        const customToken = data.data.customToken; // For Firebase Auth
+        
+        // Save to auth context (this will also check subscription and sign into Firebase)
+        await login(token, refreshToken, userData, customToken);
+        
+        // Navigate to dashboard
         router.replace('/(tabs)');
       } else {
         Alert.alert('Error', data.message || 'Login failed');
@@ -59,48 +77,82 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
       
       <View style={styles.header}>
-        <Text style={styles.logo}>DRU EDU</Text>
-        <Text style={styles.subtitle}>Parent Portal</Text>
+        <Image source={require('../../assets/images/Logo.png')} style={styles.logo} resizeMode="contain" />
+        <Text style={styles.headerTitle}>DRU EDU</Text>
+        <Text style={styles.headerSubtitle}>Parent Portal</Text>
       </View>
 
-      <View style={styles.form}>
-        <Text style={styles.title}>Welcome Back</Text>
-        <Text style={styles.description}>Sign in to view your child&apos;s progress</Text>
+      <ScrollView 
+        style={styles.formContainer}
+        contentContainerStyle={styles.formContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.welcomeSection}>
+          <Text style={styles.title}>Welcome Back!</Text>
+          <Text style={styles.description}>
+            Sign in to track your child&apos;s academic progress
+          </Text>
+        </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          placeholderTextColor="#999"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
+        <View style={styles.inputContainer}>
+          <View style={styles.inputWrapper}>
+            <Ionicons name="mail-outline" size={22} color="#6B7280" style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Email Address"
+              placeholderTextColor="#9CA3AF"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          placeholderTextColor="#999"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
+          <View style={styles.inputWrapper}>
+            <Ionicons name="lock-closed-outline" size={22} color="#6B7280" style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Password"
+              placeholderTextColor="#9CA3AF"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+            />
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+              <Ionicons name={showPassword ? "eye-outline" : "eye-off-outline"} size={22} color="#6B7280" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <TouchableOpacity style={styles.forgotPassword}>
+          <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+        </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.button, loading && styles.buttonDisabled]}
           onPress={handleLogin}
           disabled={loading}
+          activeOpacity={0.8}
         >
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>Sign In</Text>
+            <>
+              <Text style={styles.buttonText}>Sign In</Text>
+              <Ionicons name="arrow-forward" size={20} color="#fff" style={styles.buttonIcon} />
+            </>
           )}
         </TouchableOpacity>
+
+        <View style={styles.divider}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>or</Text>
+          <View style={styles.dividerLine} />
+        </View>
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>Don&apos;t have an account? </Text>
@@ -110,7 +162,7 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </Link>
         </View>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -118,68 +170,136 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#F8FAFC',
   },
   header: {
-    paddingTop: 80,
+    backgroundColor: '#4F46E5',
+    paddingTop: 60,
     paddingBottom: 40,
     alignItems: 'center',
-    backgroundColor: '#4F46E5',
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
   },
   logo: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#fff',
+    width: 90,
+    height: 90,
   },
-  subtitle: {
-    fontSize: 16,
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginTop: 12,
+    letterSpacing: 2,
+  },
+  headerSubtitle: {
+    fontSize: 14,
     color: '#E0E7FF',
     marginTop: 4,
+    letterSpacing: 1,
   },
-  form: {
+  formContainer: {
     flex: 1,
+  },
+  formContent: {
     padding: 24,
-    paddingTop: 40,
+    paddingTop: 32,
+  },
+  welcomeSection: {
+    marginBottom: 32,
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#1F2937',
     marginBottom: 8,
   },
   description: {
     fontSize: 16,
     color: '#6B7280',
-    marginBottom: 32,
+    lineHeight: 24,
   },
-  input: {
-    backgroundColor: '#F3F4F6',
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    marginBottom: 16,
+  inputContainer: {
+    gap: 16,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: '#E5E7EB',
+    paddingHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  inputIcon: {
+    marginRight: 12,
+  },
+  input: {
+    flex: 1,
+    paddingVertical: 16,
+    fontSize: 16,
+    color: '#1F2937',
+  },
+  eyeIcon: {
+    padding: 4,
+  },
+  forgotPassword: {
+    alignSelf: 'flex-end',
+    marginTop: 12,
+    marginBottom: 24,
+  },
+  forgotPasswordText: {
+    color: '#4F46E5',
+    fontSize: 14,
+    fontWeight: '600',
   },
   button: {
     backgroundColor: '#4F46E5',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    paddingVertical: 16,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
+    justifyContent: 'center',
+    shadowColor: '#4F46E5',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   buttonDisabled: {
     opacity: 0.7,
   },
   buttonText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '600',
+  },
+  buttonIcon: {
+    marginLeft: 8,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 24,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E5E7EB',
+  },
+  dividerText: {
+    marginHorizontal: 16,
+    color: '#9CA3AF',
+    fontSize: 14,
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 24,
+    marginBottom: 20,
   },
   footerText: {
     color: '#6B7280',
@@ -188,6 +308,6 @@ const styles = StyleSheet.create({
   linkText: {
     color: '#4F46E5',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });
