@@ -62,10 +62,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     notificationService.setAuthToken(authToken);
   }, [authToken]);
 
-  // Register for push notifications
+  // Try to register for push notifications silently (only if already permitted)
   useEffect(() => {
     if (isAuthenticated) {
-      registerForPushNotifications();
+      checkAndRegisterPushToken();
     }
   }, [isAuthenticated]);
 
@@ -137,6 +137,52 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     
     // You can add navigation logic here based on notification type
     // For example: router.push('/notifications') or navigate to specific screen
+  };
+
+  // Check if we already have permission and register silently (no prompt)
+  const checkAndRegisterPushToken = async () => {
+    try {
+      // Skip on non-physical devices (simulators/emulators)
+      if (!Device.isDevice) {
+        return;
+      }
+
+      // Only check existing permissions - don't request new ones
+      const { status } = await Notifications.getPermissionsAsync();
+      
+      // Only proceed if already granted
+      if (status !== 'granted') {
+        return;
+      }
+
+      // Get Expo push token
+      const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+      if (!projectId) {
+        // No project ID configured, skip silently
+        return;
+      }
+
+      const token = await Notifications.getExpoPushTokenAsync({
+        projectId,
+      });
+
+      setExpoPushToken(token.data);
+
+      // Register token with backend silently
+      await notificationService.registerDeviceToken(
+        token.data,
+        Platform.OS,
+        Device.modelName || undefined
+      );
+
+      // Set up notification channel for Android
+      if (Platform.OS === 'android') {
+        await setupAndroidNotificationChannels();
+      }
+    } catch (error) {
+      // Fail silently - don't show any errors to user
+      console.log('Push notification setup skipped');
+    }
   };
 
   const registerForPushNotifications = async () => {
