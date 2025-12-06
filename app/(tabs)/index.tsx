@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useStudent, Student } from '@/src/contexts/StudentContext';
 import Paywall from '@/components/Paywall';
+import { NotificationBell } from '@/components/NotificationBell';
 
 export default function HomeScreen() {
   const { user, hasActiveSubscription, subscription, refreshSubscription, isLoading } = useAuth();
@@ -86,10 +87,7 @@ export default function HomeScreen() {
               <Text style={styles.brandTagline}>Parent Portal</Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.notificationBtn}>
-            <Ionicons name="notifications-outline" size={24} color="#1F2937" />
-            <View style={styles.notificationBadge} />
-          </TouchableOpacity>
+          <NotificationBell color="#1F2937" size={24} />
         </View>
 
         {/* Greeting */}

@@ -25,6 +25,7 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import { useStudent } from '@/src/contexts/StudentContext';
 import Paywall from '@/components/Paywall';
 import { AUTH_ENDPOINTS } from '@/src/config/api';
+import { NotificationBell } from '@/components/NotificationBell';
 
 interface MenuItem {
   id: string;
@@ -603,9 +604,9 @@ export default function ProfileScreen() {
         {
           id: 'notifications',
           icon: 'notifications-outline',
-          label: 'Notifications',
+          label: 'Notification Settings',
           showArrow: true,
-          onPress: () => setNotificationsModalVisible(true),
+          onPress: () => router.push('/notification-settings'),
         },
       ],
     },
@@ -972,6 +973,7 @@ export default function ProfileScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Profile</Text>
+          <NotificationBell color="#1F2937" size={24} />
         </View>
 
         {/* Profile Card */}
@@ -1094,6 +1096,9 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 16,

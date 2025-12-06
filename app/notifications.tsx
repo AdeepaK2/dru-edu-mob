@@ -8,9 +8,11 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from 'react-native';
+import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useNotifications } from '../../src/contexts/NotificationContext';
-import { Notification, NotificationType } from '../../src/services/notificationService';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNotifications } from '../src/contexts/NotificationContext';
+import { Notification, NotificationType } from '../src/services/notificationService';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
 const getNotificationIcon = (type: NotificationType): keyof typeof Ionicons.glyphMap => {
@@ -113,6 +115,7 @@ function NotificationItem({
 }
 
 export default function NotificationsScreen() {
+  const router = useRouter();
   const {
     notifications,
     unreadCount,
@@ -152,24 +155,6 @@ export default function NotificationsScreen() {
     [handleNotificationPress, deleteNotification, textColor, backgroundColor, borderColor]
   );
 
-  const renderHeader = () => (
-    <View style={[styles.header, { borderBottomColor: borderColor }]}>
-      <View style={styles.headerLeft}>
-        <Text style={[styles.headerTitle, { color: textColor }]}>Notifications</Text>
-        {unreadCount > 0 && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{unreadCount}</Text>
-          </View>
-        )}
-      </View>
-      {unreadCount > 0 && (
-        <TouchableOpacity onPress={() => markAllAsRead()} style={styles.markAllButton}>
-          <Text style={styles.markAllText}>Mark all as read</Text>
-        </TouchableOpacity>
-      )}
-    </View>
-  );
-
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
       <Ionicons name="notifications-off-outline" size={64} color="#9CA3AF" />
@@ -190,8 +175,31 @@ export default function NotificationsScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor }]}>
-      {renderHeader()}
+    <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top']}>
+      <Stack.Screen options={{ headerShown: false }} />
+      
+      {/* Custom Header */}
+      <View style={[styles.header, { borderBottomColor: borderColor }]}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color={textColor} />
+        </TouchableOpacity>
+        <View style={styles.headerCenter}>
+          <Text style={[styles.headerTitle, { color: textColor }]}>Notifications</Text>
+          {unreadCount > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{unreadCount}</Text>
+            </View>
+          )}
+        </View>
+        {unreadCount > 0 ? (
+          <TouchableOpacity onPress={() => markAllAsRead()} style={styles.markAllButton}>
+            <Text style={styles.markAllText}>Read all</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.placeholder} />
+        )}
+      </View>
+
       <FlatList
         data={notifications}
         renderItem={renderNotification}
@@ -214,7 +222,7 @@ export default function NotificationsScreen() {
         ListFooterComponent={renderFooter}
         showsVerticalScrollIndicator={false}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -228,17 +236,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    paddingTop: 60,
     borderBottomWidth: 1,
   },
-  headerLeft: {
+  backButton: {
+    padding: 4,
+  },
+  headerCenter: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '600',
   },
   badge: {
     backgroundColor: '#EF4444',
@@ -254,12 +264,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   markAllButton: {
-    padding: 8,
+    padding: 4,
   },
   markAllText: {
     color: '#3B82F6',
     fontSize: 14,
     fontWeight: '500',
+  },
+  placeholder: {
+    width: 60,
   },
   listContent: {
     padding: 16,
@@ -274,6 +287,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     alignItems: 'flex-start',
+    marginBottom: 12,
   },
   iconContainer: {
     width: 44,
