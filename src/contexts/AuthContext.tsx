@@ -9,6 +9,7 @@ interface User {
   email: string;
   name: string;
   phone?: string;
+  photoURL?: string;
   linkedStudents: Array<{
     studentId: string;
     studentName: string;
@@ -39,6 +40,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   refreshSubscription: () => Promise<void>;
   setSubscription: (sub: Subscription) => void;
+  updateUser: (updates: Partial<User>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -309,6 +311,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const updateUser = async (updates: Partial<User>) => {
+    if (!user) return;
+    
+    const updatedUser = { ...user, ...updates };
+    setUser(updatedUser);
+    
+    // Also update AsyncStorage
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(updatedUser));
+      console.log('✅ User data updated in storage');
+    } catch (error) {
+      console.error('Error updating user in storage:', error);
+    }
+  };
+
   const value: AuthContextType = {
     user,
     authToken,
@@ -320,6 +337,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     logout,
     refreshSubscription,
     setSubscription,
+    updateUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
