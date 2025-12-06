@@ -37,6 +37,17 @@ export const API_CONFIG = {
       teachers: (studentId: string) => `/student/${studentId}/teachers`,
       messages: (studentId: string) => `/student/${studentId}/messages`,
     },
+    notifications: {
+      list: '/notifications',
+      settings: '/notifications/settings',
+      deviceToken: '/notifications/device-token',
+      unreadCount: '/notifications/unread-count',
+      markRead: (id: string) => `/notifications/read/${id}`,
+      markAllRead: '/notifications/read-all',
+      delete: (id: string) => `/notifications/${id}`,
+      subscribeTopic: (topic: string) => `/notifications/topics/${topic}/subscribe`,
+      unsubscribeTopic: (topic: string) => `/notifications/topics/${topic}/unsubscribe`,
+    },
   },
 };
 
