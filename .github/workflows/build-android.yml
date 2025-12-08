@@ -69,18 +69,41 @@ jobs:
         run: eas build --platform android --profile production --non-interactive --local
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EXPO_NO_HERMES_SOURCEMAPS: 1
+          NODE_ENV: production
 
-      - name: Get version from app.json
+      - name: Get latest release version and increment
         id: get_version
         run: |
-          VERSION=$(node -p "require('./app.json').expo.version")
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Version: $VERSION"
+          # Get latest release tag from GitHub
+          LATEST_TAG=$(gh release list --limit 1 --json tagName -q '.[0].tagName' 2>/dev/null || echo "")
+          
+          if [ -z "$LATEST_TAG" ]; then
+            # No releases yet, start at 1.0.0
+            NEW_VERSION="1.0.0"
+          else
+            # Extract version number (e.g., v1.0.5 -> 1.0.5)
+            CURRENT_VERSION=$(echo "$LATEST_TAG" | sed 's/^v//' | cut -d'-' -f1)
+            
+            # Split into major, minor, patch
+            MAJOR=$(echo "$CURRENT_VERSION" | cut -d'.' -f1)
+            MINOR=$(echo "$CURRENT_VERSION" | cut -d'.' -f2)
+            PATCH=$(echo "$CURRENT_VERSION" | cut -d'.' -f3)
+            
+            # Increment patch version
+            NEW_PATCH=$((PATCH + 1))
+            NEW_VERSION="${MAJOR}.${MINOR}.${NEW_PATCH}"
+          fi
+          
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "New Version: $NEW_VERSION"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Generate release tag
         id: tag
         run: |
-          TAG="v${{ steps.get_version.outputs.version }}-$(date +'%Y%m%d%H%M%S')"
+          TAG="v${{ steps.get_version.outputs.version }}"
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "Tag: $TAG"
 
