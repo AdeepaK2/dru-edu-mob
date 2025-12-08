@@ -69,6 +69,8 @@ jobs:
         run: eas build --platform android --profile production --non-interactive --local
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EXPO_NO_HERMES_SOURCEMAPS: 1
+          NODE_ENV: production
 
       - name: Get version from app.json
         id: get_version
