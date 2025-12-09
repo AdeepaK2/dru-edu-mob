@@ -1,18 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Image, Dimensions } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  withDelay,
-  withSequence,
-  withRepeat,
-  Easing,
-  interpolate,
-  FadeIn,
-  FadeInDown,
-  FadeInUp,
-} from 'react-native-reanimated';
+import { View, Text, StyleSheet, Image, Dimensions, Animated, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -25,69 +12,75 @@ const STORAGE_KEYS = {
   TOKEN_EXPIRY: '@dru_token_expiry',
 };
 
-const AnimatedText = Animated.createAnimatedComponent(Text);
-
 export default function SplashScreen() {
-  // Animation values
-  const logoScale = useSharedValue(0);
-  const logoRotate = useSharedValue(0);
-  const titleOpacity = useSharedValue(0);
-  const taglineIndex = useSharedValue(0);
-  const shimmer = useSharedValue(0);
-  const pulse = useSharedValue(1);
-  const dotProgress = useSharedValue(0);
-
-  const taglines = [
-    "Melbourne's Best Institute",
-    "Where Excellence Meets Education",
-    "Shaping Future Leaders",
-  ];
+  // Using React Native's built-in Animated API (more stable for production)
+  const logoScale = useRef(new Animated.Value(0.5)).current;
+  const logoOpacity = useRef(new Animated.Value(0)).current;
+  const titleOpacity = useRef(new Animated.Value(0)).current;
+  const titleTranslateY = useRef(new Animated.Value(20)).current;
+  const taglineOpacity = useRef(new Animated.Value(0)).current;
+  const footerOpacity = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    // Logo animation - scale up with bounce
-    logoScale.value = withSequence(
-      withTiming(1.2, { duration: 400, easing: Easing.out(Easing.back) }),
-      withTiming(1, { duration: 200 })
-    );
-
-    // Subtle logo rotation
-    logoRotate.value = withSequence(
-      withDelay(300, withTiming(5, { duration: 150 })),
-      withTiming(-5, { duration: 150 }),
-      withTiming(0, { duration: 150 })
-    );
-
-    // Title fade in
-    titleOpacity.value = withDelay(400, withTiming(1, { duration: 600 }));
-
-    // Shimmer effect
-    shimmer.value = withRepeat(
-      withTiming(1, { duration: 2000, easing: Easing.linear }),
-      -1,
-      false
-    );
+    // Start animations
+    Animated.sequence([
+      // Logo animation
+      Animated.parallel([
+        Animated.spring(logoScale, {
+          toValue: 1,
+          tension: 50,
+          friction: 7,
+          useNativeDriver: true,
+        }),
+        Animated.timing(logoOpacity, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+      ]),
+      // Title animation
+      Animated.parallel([
+        Animated.timing(titleOpacity, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(titleTranslateY, {
+          toValue: 0,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+      ]),
+      // Tagline animation
+      Animated.timing(taglineOpacity, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      // Footer
+      Animated.timing(footerOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
 
     // Pulse animation for loading
-    pulse.value = withRepeat(
-      withSequence(
-        withTiming(1.2, { duration: 600 }),
-        withTiming(1, { duration: 600 })
-      ),
-      -1,
-      true
-    );
-
-    // Animated dots
-    dotProgress.value = withRepeat(
-      withTiming(3, { duration: 1500, easing: Easing.linear }),
-      -1,
-      false
-    );
-
-    // Tagline rotation
-    const taglineInterval = setInterval(() => {
-      taglineIndex.value = (taglineIndex.value + 1) % taglines.length;
-    }, 2000);
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
 
     const checkAuth = async () => {
       try {
@@ -123,57 +116,23 @@ export default function SplashScreen() {
     };
     
     checkAuth();
-
-    return () => clearInterval(taglineInterval);
   }, []);
-
-  // Animated styles
-  const logoAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: logoScale.value },
-      { rotate: `${logoRotate.value}deg` },
-    ],
-  }));
-
-  const titleAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: titleOpacity.value,
-    transform: [{ translateY: interpolate(titleOpacity.value, [0, 1], [20, 0]) }],
-  }));
-
-  const shimmerStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: interpolate(shimmer.value, [0, 1], [-width, width]) }],
-  }));
-
-  const pulseStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: pulse.value }],
-    opacity: interpolate(pulse.value, [1, 1.2], [0.7, 1]),
-  }));
-
-  const dot1Style = useAnimatedStyle(() => ({
-    opacity: interpolate(dotProgress.value, [0, 0.5, 1, 3], [1, 0.3, 0.3, 1]),
-    transform: [{ scale: interpolate(dotProgress.value, [0, 0.5, 1, 3], [1.3, 1, 1, 1.3]) }],
-  }));
-
-  const dot2Style = useAnimatedStyle(() => ({
-    opacity: interpolate(dotProgress.value, [0, 1, 1.5, 2, 3], [0.3, 1, 0.3, 0.3, 0.3]),
-    transform: [{ scale: interpolate(dotProgress.value, [0, 1, 1.5, 2, 3], [1, 1.3, 1, 1, 1]) }],
-  }));
-
-  const dot3Style = useAnimatedStyle(() => ({
-    opacity: interpolate(dotProgress.value, [0, 2, 2.5, 3], [0.3, 1, 0.3, 0.3]),
-    transform: [{ scale: interpolate(dotProgress.value, [0, 2, 2.5, 3], [1, 1.3, 1, 1]) }],
-  }));
 
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
       
-      {/* Animated background gradient overlay */}
-      <Animated.View style={[styles.shimmerOverlay, shimmerStyle]} />
-      
       <View style={styles.content}>
         {/* Animated Logo */}
-        <Animated.View style={[styles.logoContainer, logoAnimatedStyle]}>
+        <Animated.View 
+          style={[
+            styles.logoContainer, 
+            { 
+              opacity: logoOpacity,
+              transform: [{ scale: logoScale }] 
+            }
+          ]}
+        >
           <View style={styles.logoGlow} />
           <Image 
             source={require('../assets/images/Logo.png')} 
@@ -183,58 +142,40 @@ export default function SplashScreen() {
         </Animated.View>
 
         {/* Animated Title */}
-        <Animated.View style={titleAnimatedStyle}>
+        <Animated.View 
+          style={{ 
+            opacity: titleOpacity,
+            transform: [{ translateY: titleTranslateY }]
+          }}
+        >
           <Text style={styles.title}>Dr U Education</Text>
         </Animated.View>
 
-        {/* Animated Subtitle */}
-        <Animated.Text 
-          entering={FadeInDown.delay(600).duration(500)}
-          style={styles.subtitle}
-        >
+        {/* Subtitle */}
+        <Animated.Text style={[styles.subtitle, { opacity: titleOpacity }]}>
           Parent Portal
         </Animated.Text>
 
-        {/* Catchy Tagline with animation */}
-        <Animated.View 
-          entering={FadeInUp.delay(800).duration(600)}
-          style={styles.taglineContainer}
-        >
+        {/* Tagline */}
+        <Animated.View style={[styles.taglineContainer, { opacity: taglineOpacity }]}>
           <View style={styles.taglineBadge}>
-            <Text style={styles.starIcon}>⭐</Text>
-            <Text style={styles.taglineMain}>Melbourne's Best Institute</Text>
-            <Text style={styles.starIcon}>⭐</Text>
+            <Text style={styles.taglineMain}>Melbourne's Premier Tutoring Institute</Text>
           </View>
         </Animated.View>
 
-        {/* Secondary taglines */}
-        <Animated.View 
-          entering={FadeIn.delay(1200).duration(800)}
-          style={styles.secondaryTaglines}
-        >
-          <Text style={styles.secondaryText}>🎓 Excellence in Education</Text>
-          <Text style={styles.secondaryText}>🚀 Shaping Future Leaders</Text>
-          <Text style={styles.secondaryText}>💡 Where Dreams Take Flight</Text>
-        </Animated.View>
-
-        {/* Animated Loading */}
-        <Animated.View style={[styles.loadingContainer, pulseStyle]}>
-          <View style={styles.loadingRing}>
-            <View style={styles.loadingInner} />
-          </View>
+        {/* Loading */}
+        <Animated.View style={[styles.loadingContainer, { transform: [{ scale: pulseAnim }] }]}>
+          <ActivityIndicator size="large" color="#FFFFFF" />
         </Animated.View>
       </View>
 
       {/* Footer */}
-      <Animated.View 
-        entering={FadeInUp.delay(1000).duration(500)}
-        style={styles.footer}
-      >
+      <Animated.View style={[styles.footer, { opacity: footerOpacity }]}>
         <Text style={styles.footerText}>Empowering Parents in Education</Text>
         <View style={styles.dots}>
-          <Animated.View style={[styles.dot, dot1Style]} />
-          <Animated.View style={[styles.dot, dot2Style]} />
-          <Animated.View style={[styles.dot, dot3Style]} />
+          <View style={[styles.dot, styles.dotActive]} />
+          <View style={styles.dot} />
+          <View style={styles.dot} />
         </View>
       </Animated.View>
     </View>
@@ -248,16 +189,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 60,
     overflow: 'hidden',
-  },
-  shimmerOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    width: width * 0.5,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    transform: [{ skewX: '-20deg' }],
   },
   content: {
     flex: 1,
@@ -307,51 +238,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.15)',
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 30,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.3)',
   },
-  starIcon: {
-    fontSize: 16,
-    marginHorizontal: 8,
-  },
   taglineMain: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#FFFFFF',
-    letterSpacing: 1,
-  },
-  secondaryTaglines: {
-    marginTop: 24,
-    alignItems: 'center',
-    gap: 8,
-  },
-  secondaryText: {
-    fontSize: 14,
-    color: '#C7D2FE',
     letterSpacing: 0.5,
-    fontWeight: '500',
   },
   loadingContainer: {
     marginTop: 40,
-  },
-  loadingRing: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.3)',
-    borderTopColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingInner: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.5)',
   },
   footer: {
     alignItems: 'center',
@@ -371,6 +271,10 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+  },
+  dotActive: {
     backgroundColor: '#FFFFFF',
+    width: 24,
   },
 });
