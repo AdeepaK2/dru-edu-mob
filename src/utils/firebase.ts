@@ -1,5 +1,13 @@
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
-import { getFirestore, Firestore, initializeFirestore } from 'firebase/firestore';
+import { 
+  getFirestore, 
+  Firestore, 
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+  CACHE_SIZE_UNLIMITED,
+  enableIndexedDbPersistence
+} from 'firebase/firestore';
 import { initializeAuth, getReactNativePersistence, Auth } from 'firebase/auth';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -35,10 +43,15 @@ if (!getApps().length) {
 }
 
 // Connect to the correct Firestore database (production)
-// Use initializeFirestore to specify database ID
+// Enable offline persistence for better performance with 500+ users
 try {
-  firestore = initializeFirestore(app, {}, FIRESTORE_DATABASE_ID);
-  console.log('Firebase: Connected to Firestore database:', FIRESTORE_DATABASE_ID);
+  firestore = initializeFirestore(app, {
+    // Enable local cache for offline support and faster reads
+    localCache: persistentLocalCache({
+      cacheSizeBytes: CACHE_SIZE_UNLIMITED,
+    }),
+  }, FIRESTORE_DATABASE_ID);
+  console.log('Firebase: Connected to Firestore database with offline persistence:', FIRESTORE_DATABASE_ID);
 } catch (e) {
   // If already initialized, get the existing instance
   firestore = getFirestore(app, FIRESTORE_DATABASE_ID);
