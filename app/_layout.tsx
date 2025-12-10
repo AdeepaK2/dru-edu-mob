@@ -1,8 +1,8 @@
 // Polyfill for Firebase - must be first import
 import '@azure/core-asynciterator-polyfill';
 
-import { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator } from 'react-native';
+import { useEffect, useState, ErrorInfo } from 'react';
+import { View, Text, ActivityIndicator, LogBox } from 'react-native';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -12,14 +12,22 @@ import { AuthProvider } from '../src/contexts/AuthContext';
 import { StudentProvider } from '../src/contexts/StudentContext';
 import { NotificationProvider } from '../src/contexts/NotificationContext';
 
+// Ignore specific warnings that don't affect functionality
+LogBox.ignoreLogs([
+  'Setting a timer',
+  'AsyncStorage has been extracted',
+  'Non-serializable values were found',
+]);
+
 // Error boundary component
 function ErrorFallback({ error }: { error: Error }) {
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff', padding: 20 }}>
       <Text style={{ fontSize: 18, color: '#ff0000', marginBottom: 10 }}>Something went wrong</Text>
       <Text style={{ fontSize: 14, color: '#666', textAlign: 'center', paddingHorizontal: 20 }}>
         {error?.message || 'Unknown error'}
       </Text>
+      <Text style={{ fontSize: 12, color: '#999', marginTop: 10 }}>Please restart the app</Text>
     </View>
   );
 }

@@ -273,20 +273,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Set token expiry to ~55 minutes from now (idToken expires in 1 hour)
       const expiryTime = Date.now() + TOKEN_VALIDITY_DURATION;
       
-      await Promise.all([
-        AsyncStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token),
-        AsyncStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken),
-        AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(userData)),
-        AsyncStorage.setItem(STORAGE_KEYS.TOKEN_EXPIRY, expiryTime.toString()),
-      ]);
+      // Store auth data - wrap each in try-catch to prevent partial failures from crashing
+      try {
+        await AsyncStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token || '');
+      } catch (e) { console.error('Failed to store auth token:', e); }
+      
+      try {
+        await AsyncStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken || '');
+      } catch (e) { console.error('Failed to store refresh token:', e); }
+      
+      try {
+        await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(userData));
+      } catch (e) { console.error('Failed to store user data:', e); }
+      
+      try {
+        await AsyncStorage.setItem(STORAGE_KEYS.TOKEN_EXPIRY, expiryTime.toString());
+      } catch (e) { console.error('Failed to store token expiry:', e); }
       
       setAuthToken(token);
       setUser(userData);
       
-      // Fetch subscription status after login
-      await fetchSubscriptionStatus(token);
+      // Fetch subscription status after login - don't let this crash the login flow
+      try {
+        await fetchSubscriptionStatus(token);
+      } catch (subError) {
+        console.error('Failed to fetch subscription after login:', subError);
+      }
     } catch (error) {
-      console.error('Error saving auth:', error);
+      console.error('Error in login:', error);
       throw error;
     }
   };

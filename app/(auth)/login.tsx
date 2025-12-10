@@ -26,7 +26,7 @@ export default function LoginScreen() {
   const { login } = useAuth();
 
   const handleLogin = async () => {
-    if (!email || !password) {
+    if (!email?.trim() || !password) {
       Alert.alert('Error', 'Please enter email and password');
       return;
     }
@@ -36,25 +36,30 @@ export default function LoginScreen() {
       const response = await fetch(AUTH_ENDPOINTS.login, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}`);
+      }
 
       const data = await response.json();
 
       if (data.success) {
-        // Extract user data and token
+        // Safely extract user data with fallbacks
+        const parentData = data.data?.parent || {};
         const userData = {
-          uid: data.data.parent.uid,
-          email: data.data.parent.email,
-          name: data.data.parent.name,
-          phone: data.data.parent.phone,
-          linkedStudents: data.data.parent.linkedStudents || [],
+          uid: parentData.uid || '',
+          email: parentData.email || email.trim().toLowerCase(),
+          name: parentData.name || '',
+          phone: parentData.phone || '',
+          linkedStudents: Array.isArray(parentData.linkedStudents) ? parentData.linkedStudents : [],
         };
         
         // Use idToken for API calls (not customToken)
-        const token = data.data.idToken || data.data.customToken;
-        const refreshToken = data.data.refreshToken || '';
-        const customToken = data.data.customToken; // For Firebase Auth
+        const token = data.data?.idToken || data.data?.customToken || '';
+        const refreshToken = data.data?.refreshToken || '';
+        const customToken = data.data?.customToken; // For Firebase Auth
         
         // Save to auth context (this will also check subscription and sign into Firebase)
         await login(token, refreshToken, userData, customToken);
@@ -65,8 +70,8 @@ export default function LoginScreen() {
         Alert.alert('Error', data.message || 'Login failed');
       }
     } catch (error) {
-      Alert.alert('Error', 'Network error. Please try again.');
       console.error('Login error:', error);
+      Alert.alert('Error', 'Network error. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
