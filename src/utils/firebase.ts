@@ -3,10 +3,7 @@ import {
   getFirestore, 
   Firestore, 
   initializeFirestore,
-  persistentLocalCache,
-  persistentMultipleTabManager,
-  CACHE_SIZE_UNLIMITED,
-  enableIndexedDbPersistence
+  CACHE_SIZE_UNLIMITED
 } from 'firebase/firestore';
 import { initializeAuth, getReactNativePersistence, Auth } from 'firebase/auth';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
@@ -25,42 +22,49 @@ const firebaseConfig = {
 // Firestore database ID - must match the web app (production database)
 const FIRESTORE_DATABASE_ID = process.env.EXPO_PUBLIC_FIRESTORE_DATABASE_ID || 'production';
 
-// Validate config
-if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
-  console.warn('Firebase config missing. Please check EXPO_PUBLIC_FIREBASE_* environment variables.');
-}
-
 // Initialize Firebase
 let app: FirebaseApp;
 let firestore: Firestore;
 let auth: Auth;
 let storage: FirebaseStorage;
 
-if (!getApps().length) {
-  app = initializeApp(firebaseConfig);
-} else {
-  app = getApps()[0];
-}
-
-// Connect to the correct Firestore database (production)
-// Enable offline persistence for better performance with 500+ users
 try {
-  firestore = initializeFirestore(app, {
-    // Enable local cache for offline support and faster reads
-    localCache: persistentLocalCache({
-      cacheSizeBytes: CACHE_SIZE_UNLIMITED,
-    }),
-  }, FIRESTORE_DATABASE_ID);
-  console.log('Firebase: Connected to Firestore database with offline persistence:', FIRESTORE_DATABASE_ID);
-} catch (e) {
-  // If already initialized, get the existing instance
-  firestore = getFirestore(app, FIRESTORE_DATABASE_ID);
-  console.log('Firebase: Using existing Firestore instance for database:', FIRESTORE_DATABASE_ID);
-}
+  if (!getApps().length) {
+    app = initializeApp(firebaseConfig);
+  } else {
+    app = getApps()[0];
+  }
 
-auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(AsyncStorage)
-});
-storage = getStorage(app);
+  // Initialize Firestore with simpler config for React Native
+  try {
+    firestore = initializeFirestore(app, {
+      cacheSizeBytes: CACHE_SIZE_UNLIMITED,
+    }, FIRESTORE_DATABASE_ID);
+  } catch (e) {
+    // If already initialized, get the existing instance
+    firestore = getFirestore(app, FIRESTORE_DATABASE_ID);
+  }
+
+  // Initialize Auth with AsyncStorage persistence
+  try {
+    auth = initializeAuth(app, {
+      persistence: getReactNativePersistence(AsyncStorage)
+    });
+  } catch (e) {
+    // Auth might already be initialized
+    const { getAuth } = require('firebase/auth');
+    auth = getAuth(app);
+  }
+
+  storage = getStorage(app);
+} catch (error) {
+  console.error('Firebase initialization error:', error);
+  // Create fallback instances to prevent crashes
+  app = getApps()[0] || initializeApp(firebaseConfig);
+  firestore = getFirestore(app, FIRESTORE_DATABASE_ID);
+  const { getAuth } = require('firebase/auth');
+  auth = getAuth(app);
+  storage = getStorage(app);
+}
 
 export { app, firestore, auth, storage };

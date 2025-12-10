@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   TextInput,
@@ -20,7 +20,7 @@ import { AUTH_ENDPOINTS } from '../../src/config/api';
 export default function SignupScreen() {
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState('');
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [otp, setOtp] = useState<string[]>(['', '', '', '', '', '']);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
@@ -30,17 +30,28 @@ export default function SignupScreen() {
   const [linkedStudents, setLinkedStudents] = useState<any[]>([]);
   const [resendTimer, setResendTimer] = useState(0);
   
-  const otpInputs = useRef<(TextInput | null)[]>([]);
+  // Initialize refs array with proper size to prevent memory issues
+  const otpInputRefs = useRef<Array<TextInput | null>>([null, null, null, null, null, null]);
+  
+  // Safe ref setter function
+  const setOtpRef = useCallback((index: number) => (ref: TextInput | null) => {
+    if (index >= 0 && index < 6) {
+      otpInputRefs.current[index] = ref;
+    }
+  }, []);
 
   useEffect(() => {
+    let timer: NodeJS.Timeout | undefined;
     if (resendTimer > 0) {
-      const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
-      return () => clearTimeout(timer);
+      timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
     }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
   }, [resendTimer]);
 
   const handleVerifyEmail = async () => {
-    if (!email) {
+    if (!email || !email.trim()) {
       Alert.alert('Error', 'Please enter your email');
       return;
     }
@@ -50,8 +61,12 @@ export default function SignupScreen() {
       const response = await fetch(AUTH_ENDPOINTS.verifyEmail, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}`);
+      }
 
       const data = await response.json();
 
@@ -65,41 +80,66 @@ export default function SignupScreen() {
       } else {
         Alert.alert('❌ Email Not Found', data.message || 'This email is not registered in our student records.');
       }
-    } catch {
-      Alert.alert('Error', 'Network error. Please try again.');
+    } catch (error) {
+      console.error('Email verification error:', error);
+      Alert.alert('Error', 'Network error. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleOtpChange = (value: string, index: number) => {
-    if (value.length > 1) {
-      const pastedOtp = value.slice(0, 6).split('');
-      const newOtp = [...otp];
-      pastedOtp.forEach((digit, i) => {
-        if (i < 6) newOtp[i] = digit;
-      });
-      setOtp(newOtp);
-      if (pastedOtp.length === 6) {
-        otpInputs.current[5]?.focus();
+  const focusOtpInput = useCallback((index: number) => {
+    try {
+      const input = otpInputRefs.current[index];
+      if (input && typeof input.focus === 'function') {
+        input.focus();
       }
-      return;
+    } catch (e) {
+      console.warn('Failed to focus OTP input:', e);
     }
+  }, []);
 
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
+  const handleOtpChange = useCallback((value: string, index: number) => {
+    try {
+      // Handle paste of full OTP
+      if (value.length > 1) {
+        const pastedOtp = value.replace(/[^0-9]/g, '').slice(0, 6).split('');
+        const newOtp = ['', '', '', '', '', ''];
+        pastedOtp.forEach((digit, i) => {
+          if (i < 6) newOtp[i] = digit;
+        });
+        setOtp(newOtp);
+        if (pastedOtp.length === 6) {
+          focusOtpInput(5);
+        }
+        return;
+      }
 
-    if (value && index < 5) {
-      otpInputs.current[index + 1]?.focus();
+      // Single digit input - only allow numbers
+      const cleanValue = value.replace(/[^0-9]/g, '');
+      setOtp(prev => {
+        const newOtp = [...prev];
+        newOtp[index] = cleanValue;
+        return newOtp;
+      });
+
+      if (cleanValue && index < 5) {
+        focusOtpInput(index + 1);
+      }
+    } catch (e) {
+      console.error('OTP change error:', e);
     }
-  };
+  }, [focusOtpInput]);
 
-  const handleOtpKeyPress = (key: string, index: number) => {
-    if (key === 'Backspace' && !otp[index] && index > 0) {
-      otpInputs.current[index - 1]?.focus();
+  const handleOtpKeyPress = useCallback((key: string, index: number) => {
+    try {
+      if (key === 'Backspace' && !otp[index] && index > 0) {
+        focusOtpInput(index - 1);
+      }
+    } catch (e) {
+      console.warn('OTP key press error:', e);
     }
-  };
+  }, [otp, focusOtpInput]);
 
   const handleVerifyOtp = async () => {
     const otpCode = otp.join('');
@@ -113,8 +153,12 @@ export default function SignupScreen() {
       const response = await fetch(AUTH_ENDPOINTS.verifyOtp, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp: otpCode }),
+        body: JSON.stringify({ email: email.trim().toLowerCase(), otp: otpCode }),
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}`);
+      }
 
       const data = await response.json();
 
@@ -127,8 +171,9 @@ export default function SignupScreen() {
       } else {
         Alert.alert('❌ Invalid Code', data.message || 'The verification code is incorrect.');
       }
-    } catch {
-      Alert.alert('Error', 'Network error. Please try again.');
+    } catch (error) {
+      console.error('OTP verification error:', error);
+      Alert.alert('Error', 'Network error. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -142,8 +187,12 @@ export default function SignupScreen() {
       const response = await fetch(AUTH_ENDPOINTS.resendOtp, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}`);
+      }
 
       const data = await response.json();
 
@@ -154,15 +203,16 @@ export default function SignupScreen() {
       } else {
         Alert.alert('Error', data.message || 'Failed to resend code.');
       }
-    } catch {
-      Alert.alert('Error', 'Network error. Please try again.');
+    } catch (error) {
+      console.error('Resend OTP error:', error);
+      Alert.alert('Error', 'Network error. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleSignup = async () => {
-    if (!name || !password || !confirmPassword) {
+    if (!name?.trim() || !password || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
@@ -182,8 +232,17 @@ export default function SignupScreen() {
       const response = await fetch(AUTH_ENDPOINTS.signup, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, name, phone }),
+        body: JSON.stringify({ 
+          email: email.trim().toLowerCase(), 
+          password, 
+          name: name.trim(), 
+          phone: phone?.trim() || '' 
+        }),
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}`);
+      }
 
       const data = await response.json();
 
@@ -194,8 +253,9 @@ export default function SignupScreen() {
       } else {
         Alert.alert('Error', data.message || 'Signup failed');
       }
-    } catch {
-      Alert.alert('Error', 'Network error. Please try again.');
+    } catch (error) {
+      console.error('Signup error:', error);
+      Alert.alert('Error', 'Network error. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -269,15 +329,17 @@ export default function SignupScreen() {
             <View style={styles.otpContainer}>
               {otp.map((digit, index) => (
                 <TextInput
-                  key={index}
-                  ref={(ref) => { otpInputs.current[index] = ref; }}
+                  key={`otp-${index}`}
+                  ref={setOtpRef(index)}
                   style={[styles.otpInput, digit && styles.otpInputFilled]}
                   value={digit}
                   onChangeText={(value) => handleOtpChange(value, index)}
                   onKeyPress={({ nativeEvent }) => handleOtpKeyPress(nativeEvent.key, index)}
                   keyboardType="number-pad"
-                  maxLength={1}
+                  maxLength={6}
                   selectTextOnFocus
+                  autoComplete="one-time-code"
+                  textContentType="oneTimeCode"
                 />
               ))}
             </View>
