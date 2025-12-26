@@ -81,18 +81,41 @@ jest.mock('expo-constants', () => ({
   },
 }));
 
-// Mock firebase
-jest.mock('firebase', () => ({
+// Mock firebase/app
+jest.mock('firebase/app', () => ({
   initializeApp: jest.fn(),
-  auth: jest.fn(() => ({
-    signInWithCustomToken: jest.fn(),
-    signOut: jest.fn(),
-    currentUser: null,
-  })),
-  firestore: jest.fn(() => ({
-    collection: jest.fn(),
-    doc: jest.fn(),
-  })),
+  getApps: jest.fn(() => []),
+  getApp: jest.fn(() => ({})),
+}));
+
+// Mock firebase/auth
+jest.mock('firebase/auth', () => ({
+  getAuth: jest.fn(() => ({})),
+  signInWithCustomToken: jest.fn().mockResolvedValue({ user: { uid: 'test-uid' } }),
+  signOut: jest.fn().mockResolvedValue(undefined),
+  onAuthStateChanged: jest.fn((auth, callback) => {
+    callback(null);
+    return jest.fn();
+  }),
+}));
+
+// Mock firebase/firestore
+jest.mock('firebase/firestore', () => ({
+  getFirestore: jest.fn(() => ({})),
+  collection: jest.fn(),
+  doc: jest.fn(),
+  getDoc: jest.fn(),
+  setDoc: jest.fn(),
+  query: jest.fn(),
+  where: jest.fn(),
+  orderBy: jest.fn(),
+  onSnapshot: jest.fn(),
+}));
+
+// Mock the local firebase utility
+jest.mock('../src/utils/firebase', () => ({
+  auth: {},
+  db: {},
 }));
 
 // Mock fetch globally
