@@ -23,7 +23,7 @@ import {
   invalidateCacheByPrefix,
   clearAllCache,
   getCacheStats,
-} from '../../utils/cache';
+} from '../../../src/utils/cache';
 
 describe('Cache Utility', () => {
   beforeEach(() => {
