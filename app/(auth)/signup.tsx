@@ -420,7 +420,39 @@ export default function SignupScreen() {
               </View>
             </View>
 
-            <TouchableOpacity style={[styles.button, loading && styles.buttonDisabled]} onPress={handleSignup} disabled={loading}>
+            {/* Terms and Privacy Policy Consent */}
+            <View style={styles.termsContainer}>
+              <Pressable 
+                style={styles.checkboxContainer} 
+                onPress={() => setTermsAccepted(!termsAccepted)}
+              >
+                <View style={[styles.checkbox, termsAccepted && styles.checkboxChecked]}>
+                  {termsAccepted && <Ionicons name="checkmark" size={16} color="#fff" />}
+                </View>
+              </Pressable>
+              <View style={styles.termsTextContainer}>
+                <Text style={styles.termsText}>
+                  I agree to the{' '}
+                </Text>
+                <Link href="/(auth)/privacy-policy" asChild>
+                  <TouchableOpacity>
+                    <Text style={styles.termsLink}>Privacy Policy</Text>
+                  </TouchableOpacity>
+                </Link>
+                <Text style={styles.termsText}> and </Text>
+                <Link href="/(auth)/terms-conditions" asChild>
+                  <TouchableOpacity>
+                    <Text style={styles.termsLink}>Terms & Conditions</Text>
+                  </TouchableOpacity>
+                </Link>
+              </View>
+            </View>
+
+            <TouchableOpacity 
+              style={[styles.button, (loading || !termsAccepted) && styles.buttonDisabled]} 
+              onPress={handleSignup} 
+              disabled={loading || !termsAccepted}
+            >
               {loading ? <ActivityIndicator color="#fff" /> : <><Text style={styles.buttonText}>Create Account</Text><Ionicons name="checkmark" size={20} color="#fff" /></>}
             </TouchableOpacity>
 
@@ -494,4 +526,51 @@ const styles = StyleSheet.create({
   studentInfo: { flex: 1 },
   studentName: { fontSize: 15, fontWeight: '600', color: '#1F2937' },
   studentEmail: { fontSize: 13, color: '#6B7280', marginTop: 2 },
+  // Terms consent styles
+  termsContainer: { 
+    flexDirection: 'row', 
+    alignItems: 'flex-start', 
+    marginBottom: 20, 
+    paddingHorizontal: 4,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  checkboxContainer: { 
+    paddingRight: 12, 
+    paddingTop: 2,
+  },
+  checkbox: { 
+    width: 24, 
+    height: 24, 
+    borderRadius: 6, 
+    borderWidth: 2, 
+    borderColor: '#D1D5DB', 
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center', 
+    justifyContent: 'center',
+  },
+  checkboxChecked: { 
+    backgroundColor: '#4F46E5', 
+    borderColor: '#4F46E5',
+  },
+  termsTextContainer: { 
+    flex: 1, 
+    flexDirection: 'row', 
+    flexWrap: 'wrap', 
+    alignItems: 'center',
+  },
+  termsText: { 
+    fontSize: 14, 
+    color: '#4B5563', 
+    lineHeight: 22,
+  },
+  termsLink: { 
+    fontSize: 14, 
+    color: '#4F46E5', 
+    fontWeight: '600', 
+    textDecorationLine: 'underline',
+  },
 });
