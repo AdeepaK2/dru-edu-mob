@@ -1,16 +1,20 @@
 {
   "expo": {
-    "name": "dru-edu-mob",
+    "name": "Dr U Edu",
     "slug": "dru-edu-mob",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/Logo.png",
     "scheme": "druedumob",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.druedu.mobile"
+      "bundleIdentifier": "com.druedu.mobile",
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app needs camera access for profile photos",
+        "NSPhotoLibraryUsageDescription": "This app needs access to your photos for profile customization"
+      }
     },
     "android": {
       "package": "com.druedu.mobile",
@@ -18,8 +22,14 @@
         "backgroundColor": "#4F46E5",
         "foregroundImage": "./assets/images/Logo.png"
       },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "edgeToEdgeEnabled": false,
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "VIBRATE",
+        "RECEIVE_BOOT_COMPLETED",
+        "WAKE_LOCK"
+      ]
     },
     "web": {
       "output": "static",
@@ -50,8 +60,7 @@
       ]
     ],
     "experiments": {
-      "typedRoutes": true,
-      "reactCompiler": true
+      "typedRoutes": true
     },
     "extra": {
       "router": {},

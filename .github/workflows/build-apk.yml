@@ -1,0 +1,106 @@
+name: Build and Release APK
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Expo and EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Get version from package.json
+        id: package-version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build APK
+        run: |
+          npx expo prebuild --platform android --clean
+          cd android
+          chmod +x ./gradlew
+
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.ANDROID_SIGNING_KEY }}" | base64 -d > android/app/release.keystore
+
+      - name: Create keystore.properties
+        run: |
+          echo "storeFile=release.keystore" > android/keystore.properties
+          echo "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> android/keystore.properties
+          echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" >> android/keystore.properties
+          echo "keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}" >> android/keystore.properties
+
+      - name: Build Release APK
+        run: |
+          cd android
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Rename APK
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk SkillUp-v${{ steps.package-version.outputs.VERSION }}.apk
+
+      - name: Upload APK as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SkillUp-APK
+          path: SkillUp-v${{ steps.package-version.outputs.VERSION }}.apk
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          files: SkillUp-v${{ steps.package-version.outputs.VERSION }}.apk
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Release (on version bump)
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.package-version.outputs.VERSION }}
+          name: Release v${{ steps.package-version.outputs.VERSION }}
+          files: SkillUp-v${{ steps.package-version.outputs.VERSION }}.apk
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
