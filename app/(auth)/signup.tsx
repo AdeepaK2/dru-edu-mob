@@ -11,6 +11,7 @@ import {
   Alert,
   ScrollView,
   Image,
+  Pressable,
 } from 'react-native';
 import { Link, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -29,6 +30,7 @@ export default function SignupScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [linkedStudents, setLinkedStudents] = useState<any[]>([]);
   const [resendTimer, setResendTimer] = useState(0);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   
   // Initialize refs array with proper size to prevent memory issues
   const otpInputRefs = useRef<Array<TextInput | null>>([null, null, null, null, null, null]);
@@ -227,6 +229,11 @@ export default function SignupScreen() {
       return;
     }
 
+    if (!termsAccepted) {
+      Alert.alert('Terms Required', 'Please accept the Privacy Policy and Terms & Conditions to continue.');
+      return;
+    }
+
     setLoading(true);
     try {
       const response = await fetch(AUTH_ENDPOINTS.signup, {
@@ -236,7 +243,10 @@ export default function SignupScreen() {
           email: email.trim().toLowerCase(), 
           password, 
           name: name.trim(), 
-          phone: phone?.trim() || '' 
+          phone: phone?.trim() || '',
+          termsAcceptedAt: new Date().toISOString(),
+          privacyPolicyVersion: '1.0',
+          termsVersion: '1.0'
         }),
       });
 
