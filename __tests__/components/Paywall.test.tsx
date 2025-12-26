@@ -22,7 +22,7 @@ let mockUser: any = {
   linkedStudents: [{ studentId: '1', studentName: 'Student 1' }],
 };
 
-jest.mock('../../../src/contexts/AuthContext', () => ({
+jest.mock('../../src/contexts/AuthContext', () => ({
   useAuth: () => ({
     user: mockUser,
     authToken: 'test-token',
@@ -37,7 +37,7 @@ jest.mock('expo-router', () => ({
   }),
 }));
 
-jest.mock('../../../src/config/api', () => ({
+jest.mock('../../src/config/api', () => ({
   SUBSCRIPTION_ENDPOINTS: {
     subscribe: 'https://api.example.com/subscription/subscribe',
     devSubscribe: 'https://api.example.com/subscription/dev-subscribe',
@@ -246,7 +246,8 @@ describe('Paywall', () => {
       );
 
       const { getByText, queryByText } = render(<Paywall />);
-      const button = getByText(/Subscribe Now/).parent;
+      const subscribeText = getByText(/Subscribe Now/);
+      const button = subscribeText.parent!;
 
       fireEvent.press(button);
 
