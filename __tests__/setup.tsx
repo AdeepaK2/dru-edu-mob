@@ -14,7 +14,7 @@ jest.mock('expo-router', () => ({
     back: jest.fn(),
     canGoBack: jest.fn(() => true),
   },
-  Link: ({ children, href, asChild }) => {
+  Link: ({ children, href, asChild }: { children: React.ReactNode; href: string; asChild?: boolean }) => {
     const { TouchableOpacity, Text } = require('react-native');
     if (asChild && children) {
       return children;
@@ -40,9 +40,9 @@ jest.mock('expo-status-bar', () => ({
 jest.mock('@expo/vector-icons', () => {
   const { Text } = require('react-native');
   return {
-    Ionicons: ({ name, ...props }) => <Text testID={`icon-${name}`} {...props}>{name}</Text>,
-    MaterialIcons: ({ name, ...props }) => <Text testID={`icon-${name}`} {...props}>{name}</Text>,
-    FontAwesome: ({ name, ...props }) => <Text testID={`icon-${name}`} {...props}>{name}</Text>,
+    Ionicons: ({ name, ...props }: { name: string; [key: string]: any }) => <Text testID={`icon-${name}`} {...props}>{name}</Text>,
+    MaterialIcons: ({ name, ...props }: { name: string; [key: string]: any }) => <Text testID={`icon-${name}`} {...props}>{name}</Text>,
+    FontAwesome: ({ name, ...props }: { name: string; [key: string]: any }) => <Text testID={`icon-${name}`} {...props}>{name}</Text>,
   };
 });
 
