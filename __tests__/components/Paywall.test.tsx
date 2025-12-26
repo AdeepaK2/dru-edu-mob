@@ -52,7 +52,7 @@ jest.mock('react-native-safe-area-context', () => ({
 }));
 
 // Import after mocks
-import Paywall from '../../../components/Paywall';
+import Paywall from '../../components/Paywall';
 
 describe('Paywall', () => {
   beforeEach(() => {
