@@ -348,7 +348,8 @@ describe('SignupScreen', () => {
       );
 
       const { getByText, getByPlaceholderText } = render(<SignupScreen />);
-      const sendButton = getByText('Send Verification Code').parent;
+      const sendButtonText = getByText('Send Verification Code');
+      const sendButton = sendButtonText.parent!;
 
       fireEvent.changeText(getByPlaceholderText('parent@email.com'), 'test@example.com');
       fireEvent.press(sendButton);
