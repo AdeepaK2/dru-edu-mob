@@ -1,0 +1,175 @@
+﻿  console.error
+    Email verification error: TypeError: Cannot read properties of undefined (reading 'alert')
+        at alert (C:\Users\adeep\OneDrive\Documents\Desktop\Client\dru\dru-edu-mob\app\(auth)\signup.tsx:81:15)
+        at Generator.next (<anonymous>)
+        at asyncGeneratorStep (C:\Users\adeep\OneDrive\Documents\Desktop\Client\dru\dru-edu-mob\node_modules\@babel\runtime\helpers\asyncToGenerator.js:3:17)
+        at _next (C:\Users\adeep\OneDrive\Documents\Desktop\Client\dru\dru-edu-mob\node_modules\@babel\runtime\helpers\asyncToGenerator.js:17:9)
+
+    [0m [90m 141 |[39m       [36mreturn[39m[33m;[39m
+     [90m 142 |[39m     }
+    [31m[1m>[22m[39m[90m 143 |[39m     originalConsoleError[33m.[39mapply(console[33m,[39m args)[33m;[39m
+     [90m     |[39m                          [31m[1m^[22m[39m
+     [90m 144 |[39m   }[33m;[39m
+     [90m 145 |[39m
+     [90m 146 |[39m   console[33m.[39mwarn [33m=[39m ([33m...[39margs) [33m=>[39m {[0m
+
+      at console.apply (__tests__/setup.tsx:143:26)
+      at error (C:\Users\adeep\OneDrive\Documents\Desktop\Client\dru\dru-edu-mob\app\(auth)../../../../../../../../signup.tsx:86:15)
+      at asyncGeneratorStep (node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+
+  console.error
+    Email verification error: TypeError: Cannot read properties of undefined (reading 'alert')
+        at alert (C:\Users\adeep\OneDrive\Documents\Desktop\Client\dru\dru-edu-mob\app\(auth)\signup.tsx:81:15)
+        at Generator.next (<anonymous>)
+        at asyncGeneratorStep (C:\Users\adeep\OneDrive\Documents\Desktop\Client\dru\dru-edu-mob\node_modules\@babel\runtime\helpers\asyncToGenerator.js:3:17)
+        at _next (C:\Users\adeep\OneDrive\Documents\Desktop\Client\dru\dru-edu-mob\node_modules\@babel\runtime\helpers\asyncToGenerator.js:17:9)
+
+    [0m [90m 141 |[39m       [36mreturn[39m[33m;[39m
+     [90m 142 |[39m     }
+    [31m[1m>[22m[39m[90m 143 |[39m     originalConsoleError[33m.[39mapply(console[33m,[39m args)[33m;[39m
+     [90m     |[39m                          [31m[1m^[22m[39m
+     [90m 144 |[39m   }[33m;[39m
+     [90m 145 |[39m
+     [90m 146 |[39m   console[33m.[39mwarn [33m=[39m ([33m...[39margs) [33m=>[39m {[0m
+
+      at console.apply (__tests__/setup.tsx:143:26)
+      at error (C:\Users\adeep\OneDrive\Documents\Desktop\Client\dru\dru-edu-mob\app\(auth)../../../../../../../../signup.tsx:86:15)
+      at asyncGeneratorStep (node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+
+  console.error
+    Email verification error: TypeError: Cannot read properties of undefined (reading 'alert')
+        at alert (C:\Users\adeep\OneDrive\Documents\Desktop\Client\dru\dru-edu-mob\app\(auth)\signup.tsx:81:15)
+        at Generator.next (<anonymous>)
+        at asyncGeneratorStep (C:\Users\adeep\OneDrive\Documents\Desktop\Client\dru\dru-edu-mob\node_modules\@babel\runtime\helpers\asyncToGenerator.js:3:17)
+        at _next (C:\Users\adeep\OneDrive\Documents\Desktop\Client\dru\dru-edu-mob\node_modules\@babel\runtime\helpers\asyncToGenerator.js:17:9)
+
+    [0m [90m 141 |[39m       [36mreturn[39m[33m;[39m
+     [90m 142 |[39m     }
+    [31m[1m>[22m[39m[90m 143 |[39m     originalConsoleError[33m.[39mapply(console[33m,[39m args)[33m;[39m
+     [90m     |[39m                          [31m[1m^[22m[39m
+     [90m 144 |[39m   }[33m;[39m
+     [90m 145 |[39m
+     [90m 146 |[39m   console[33m.[39mwarn [33m=[39m ([33m...[39margs) [33m=>[39m {[0m
+
+      at console.apply (__tests__/setup.tsx:143:26)
+      at error (C:\Users\adeep\OneDrive\Documents\Desktop\Client\dru\dru-edu-mob\app\(auth)../../../../../../../../signup.tsx:86:15)
+      at asyncGeneratorStep (node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+
+  console.error
+    Email verification error: TypeError: Cannot read properties of undefined (reading 'alert')
+        at alert (C:\Users\adeep\OneDrive\Documents\Desktop\Client\dru\dru-edu-mob\app\(auth)\signup.tsx:81:15)
+        at Generator.next (<anonymous>)
+        at asyncGeneratorStep (C:\Users\adeep\OneDrive\Documents\Desktop\Client\dru\dru-edu-mob\node_modules\@babel\runtime\helpers\asyncToGenerator.js:3:17)
+        at _next (C:\Users\adeep\OneDrive\Documents\Desktop\Client\dru\dru-edu-mob\node_modules\@babel\runtime\helpers\asyncToGenerator.js:17:9)
+
+    [0m [90m 141 |[39m       [36mreturn[39m[33m;[39m
+     [90m 142 |[39m     }
+    [31m[1m>[22m[39m[90m 143 |[39m     originalConsoleError[33m.[39mapply(console[33m,[39m args)[33m;[39m
+     [90m     |[39m                          [31m[1m^[22m[39m
+     [90m 144 |[39m   }[33m;[39m
+     [90m 145 |[39m
+     [90m 146 |[39m   console[33m.[39mwarn [33m=[39m ([33m...[39margs) [33m=>[39m {[0m
+
+      at console.apply (__tests__/setup.tsx:143:26)
+      at error (C:\Users\adeep\OneDrive\Documents\Desktop\Client\dru\dru-edu-mob\app\(auth)../../../../../../../../signup.tsx:86:15)
+      at asyncGeneratorStep (node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+
+  console.error
+    Email verification error: TypeError: Cannot read properties of undefined (reading 'alert')
+        at alert (C:\Users\adeep\OneDrive\Documents\Desktop\Client\dru\dru-edu-mob\app\(auth)\signup.tsx:81:15)
+        at Generator.next (<anonymous>)
+        at asyncGeneratorStep (C:\Users\adeep\OneDrive\Documents\Desktop\Client\dru\dru-edu-mob\node_modules\@babel\runtime\helpers\asyncToGenerator.js:3:17)
+        at _next (C:\Users\adeep\OneDrive\Documents\Desktop\Client\dru\dru-edu-mob\node_modules\@babel\runtime\helpers\asyncToGenerator.js:17:9)
+
+    [0m [90m 141 |[39m       [36mreturn[39m[33m;[39m
+     [90m 142 |[39m     }
+    [31m[1m>[22m[39m[90m 143 |[39m     originalConsoleError[33m.[39mapply(console[33m,[39m args)[33m;[39m
+     [90m     |[39m                          [31m[1m^[22m[39m
+     [90m 144 |[39m   }[33m;[39m
+     [90m 145 |[39m
+     [90m 146 |[39m   console[33m.[39mwarn [33m=[39m ([33m...[39margs) [33m=>[39m {[0m
+
+      at console.apply (__tests__/setup.tsx:143:26)
+      at error (C:\Users\adeep\OneDrive\Documents\Desktop\Client\dru\dru-edu-mob\app\(auth)../../../../../../../../signup.tsx:86:15)
+      at asyncGeneratorStep (node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+
+  console.error
+    Email verification error: TypeError: Cannot read properties of undefined (reading 'alert')
+        at alert (C:\Users\adeep\OneDrive\Documents\Desktop\Client\dru\dru-edu-mob\app\(auth)\signup.tsx:81:15)
+        at Generator.next (<anonymous>)
+        at asyncGeneratorStep (C:\Users\adeep\OneDrive\Documents\Desktop\Client\dru\dru-edu-mob\node_modules\@babel\runtime\helpers\asyncToGenerator.js:3:17)
+        at _next (C:\Users\adeep\OneDrive\Documents\Desktop\Client\dru\dru-edu-mob\node_modules\@babel\runtime\helpers\asyncToGenerator.js:17:9)
+
+    [0m [90m 141 |[39m       [36mreturn[39m[33m;[39m
+     [90m 142 |[39m     }
+    [31m[1m>[22m[39m[90m 143 |[39m     originalConsoleError[33m.[39mapply(console[33m,[39m args)[33m;[39m
+     [90m     |[39m                          [31m[1m^[22m[39m
+     [90m 144 |[39m   }[33m;[39m
+     [90m 145 |[39m
+     [90m 146 |[39m   console[33m.[39mwarn [33m=[39m ([33m...[39margs) [33m=>[39m {[0m
+
+      at console.apply (__tests__/setup.tsx:143:26)
+      at error (C:\Users\adeep\OneDrive\Documents\Desktop\Client\dru\dru-edu-mob\app\(auth)../../../../../../../../signup.tsx:86:15)
+      at asyncGeneratorStep (node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+
+  console.error
+    Email verification error: TypeError: Cannot read properties of undefined (reading 'alert')
+        at alert (C:\Users\adeep\OneDrive\Documents\Desktop\Client\dru\dru-edu-mob\app\(auth)\signup.tsx:81:15)
+        at Generator.next (<anonymous>)
+        at asyncGeneratorStep (C:\Users\adeep\OneDrive\Documents\Desktop\Client\dru\dru-edu-mob\node_modules\@babel\runtime\helpers\asyncToGenerator.js:3:17)
+        at _next (C:\Users\adeep\OneDrive\Documents\Desktop\Client\dru\dru-edu-mob\node_modules\@babel\runtime\helpers\asyncToGenerator.js:17:9)
+
+    [0m [90m 141 |[39m       [36mreturn[39m[33m;[39m
+     [90m 142 |[39m     }
+    [31m[1m>[22m[39m[90m 143 |[39m     originalConsoleError[33m.[39mapply(console[33m,[39m args)[33m;[39m
+     [90m     |[39m                          [31m[1m^[22m[39m
+     [90m 144 |[39m   }[33m;[39m
+     [90m 145 |[39m
+     [90m 146 |[39m   console[33m.[39mwarn [33m=[39m ([33m...[39margs) [33m=>[39m {[0m
+
+      at console.apply (__tests__/setup.tsx:143:26)
+      at error (C:\Users\adeep\OneDrive\Documents\Desktop\Client\dru\dru-edu-mob\app\(auth)../../../../../../../../signup.tsx:86:15)
+      at asyncGeneratorStep (node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+
+  console.error
+    Email verification error: TypeError: Cannot read properties of undefined (reading 'alert')
+        at alert (C:\Users\adeep\OneDrive\Documents\Desktop\Client\dru\dru-edu-mob\app\(auth)\signup.tsx:81:15)
+        at Generator.next (<anonymous>)
+        at asyncGeneratorStep (C:\Users\adeep\OneDrive\Documents\Desktop\Client\dru\dru-edu-mob\node_modules\@babel\runtime\helpers\asyncToGenerator.js:3:17)
+        at _next (C:\Users\adeep\OneDrive\Documents\Desktop\Client\dru\dru-edu-mob\node_modules\@babel\runtime\helpers\asyncToGenerator.js:17:9)
+
+    [0m [90m 141 |[39m       [36mreturn[39m[33m;[39m
+     [90m 142 |[39m     }
+    [31m[1m>[22m[39m[90m 143 |[39m     originalConsoleError[33m.[39mapply(console[33m,[39m args)[33m;[39m
+     [90m     |[39m                          [31m[1m^[22m[39m
+     [90m 144 |[39m   }[33m;[39m
+     [90m 145 |[39m
+     [90m 146 |[39m   console[33m.[39mwarn [33m=[39m ([33m...[39margs) [33m=>[39m {[0m
+
+      at console.apply (__tests__/setup.tsx:143:26)
+      at error (C:\Users\adeep\OneDrive\Documents\Desktop\Client\dru\dru-edu-mob\app\(auth)../../../../../../../../signup.tsx:86:15)
+      at asyncGeneratorStep (node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+
+FAIL __tests__/app/(auth)/signup.test.tsx
+  ΓùÅ Test suite failed to run
+
+    ReferenceError: You are trying to `import` a file outside of the scope of the test code.
+
+      at Runtime._execModule (node_modules/jest-runtime/build/index.js:1216:13)
+      at require (node_modules/expo/src/winter/runtime.native.ts:20:43)
+      at getValue (node_modules/expo/src/winter/installGlobal.ts:97:21)
+      at Object.get [as __ExpoImportMetaRegistry] (node_modules/expo/src/winter/installGlobal.ts:44:16)
+
+Test Suites: 1 failed, 1 total
+Tests:       0 total
+Snapshots:   0 total
+Time:        1.599 s
+Ran all test suites matching signup.
